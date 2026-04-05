@@ -1,8 +1,6 @@
-# PR Check CI/CD Setup Instructions
+# CI/CD Setup for Solo Development
 
-## Overview
-
-This guide explains how the GitHub Actions PR check workflow has been configured and how to enable branch protection rules in your GitHub repository.
+This guide explains the automated CI/CD workflow configured for this solo project. The setup runs code quality checks and tests on every push and pull request—no manual intervention needed.
 
 ## What's Configured
 
@@ -20,7 +18,7 @@ This guide explains how the GitHub Actions PR check workflow has been configured
 
 3. **[.github/workflows/pr-checks.yml](.github/workflows/pr-checks.yml)** (new)
    - **Backend Job (`backend-tests-lint`)**
-     - Runs on every PR to `main` or `develop`
+     - Runs on every push to `main` or `develop` (and on PRs)
      - Executes: `mvn clean test` (JUnit tests)
      - Executes: `mvn checkstyle:check` (Checkstyle linting)
      - Executes: `mvn clean install -DskipTests` (full build validation)
@@ -33,58 +31,23 @@ This guide explains how the GitHub Actions PR check workflow has been configured
      - Executes: `npm run build` (production build)
      - Uses Node.js 20 LTS
 
-## Enabling Branch Protection Rules
+## Viewing CI Results
 
-To block merges on failed checks, configure GitHub repository settings:
+After each push to `main` or `develop`, check the workflow status:
 
-### Step-by-Step Instructions
+1. **In GitHub**
+   - Go to your repository → **Actions** tab
+   - See all workflow runs with their status (✅ pass, ❌ fail)
+   - Click a run to see detailed logs and which step failed
 
-1. **Navigate to Repository Settings**
-   - Go to your GitHub repository
-   - Click **Settings** tab
-   - Select **Branches** (left sidebar)
+2. **In Commit History**
+   - A checkmark (✓) or ✗ appears next to each commit
+   - Green = all checks passed
+   - Red = one or more checks failed
 
-2. **Add/Edit Branch Protection Rule**
-   - Click **"Add rule"** or edit existing rule for `main`
-   - Repeat for `develop` branch
-
-3. **Configure Rule for `main` Branch**
-   - **Branch name pattern**: `main`
-   - **Protect matching branches** → Check all of:
-     - ✅ **"Require a pull request before merging"**
-       - Set required approving reviews to 1 (optional)
-       - ☑️ Dismiss stale pull request approvals when new commits are pushed (optional)
-       - ☐ Require code reviews from code owners (if using CODEOWNERS, check this)
-     
-     - ✅ **"Require status checks to pass before merging"**
-       - ✅ **"Require branches to be up to date before merging"** (recommended)
-       - Search for and select these required status checks:
-         - `backend-tests-lint` (required — always present)
-         - `frontend-tests-build` (optional — only appears when frontend/package.json exists)
-     
-     - ✅ **"Restrict who can push to matching branches"** (optional)
-       - Allow only admins to push directly (prevents accidental commits to main)
-     
-     - ✅ **"Include administrators"** unchecked (so admins can force-merge if necessary)
-   
-   - Click **Save changes**
-
-4. **Repeat for `develop` Branch**
-   - Click **"Add rule"** for `develop`
-   - Use same settings as `main` (or adjust based on team workflow)
-   - Click **Save changes**
-
-### Example Status Checks Display in PRs
-
-Once enabled, PRs will show:
-```
-✅ backend-tests-lint — All checks passed
-✅ frontend-tests-build — Skipped (frontend not yet added)
-
-✅ All required status checks have passed
-✅ Merging is blocked until you resolve merge conflicts (if any)
-✅ Merging can be performed by maintainers
-```
+3. **No Blocking** (Solo Project)
+   - Failed checks don't prevent you from pushing again
+   - You can push fixes anytime and re-run the workflow
 
 ## Testing the Workflow
 
@@ -94,24 +57,23 @@ Once enabled, PRs will show:
    - Add a line over 100 characters (violates checkstyle)
    - Example: `String veryLongVariableNameThatWillExceedOneHundredCharactersAndCauseCheckstyleToFailThisCheck = "test";`
 3. Commit and push: `git push origin test/checkstyle-failure`
-4. Create PR to `develop`
-5. **Expected Result**: PR shows `backend-tests-lint` ❌ Failed (Checkstyle violation)
-6. Merge is blocked until violation is fixed
+4. **Expected Result**: Go to GitHub Actions tab and see `backend-tests-lint` ❌ Failed (Checkstyle violation)
+5. Fix the violation and push again—workflow re-runs automatically
 
 ### Test 2: Test Failure
 1. Create a new branch: `git checkout -b test/failing-test`
 2. In `backend/visualiser-api/src/test/java/com/space/visualiser_api/VisualiserApiApplicationTests.java`:
    - Add a failing test assertion
-3. Commit, push, create PR
-4. **Expected Result**: PR shows `backend-tests-lint` ❌ Failed (JUnit test failed)
-5. Merge is blocked
+3. Commit and push
+4. **Expected Result**: GitHub Actions shows `backend-tests-lint` ❌ Failed (JUnit test failed)
+5. Fix and push again to see it pass
 
-### Test 3: Passing PR
+### Test 3: Passing Commit
 1. Create a new branch: `git checkout -b feature/valid-change`
 2. Make a valid code change (respects style guide, all tests pass)
-3. Commit, push, create PR
-4. **Expected Result**: PR shows `backend-tests-lint` ✅ Passed
-5. Merge can be performed (if you have permission)
+3. Commit and push
+4. **Expected Result**: GitHub Actions shows `backend-tests-lint` ✅ Passed
+5. Merge to main/develop whenever ready
 
 ## Notes & Troubleshooting
 
