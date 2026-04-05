@@ -1,0 +1,24 @@
+# File: .gitignore
+# Java
+target/
+*.class
+*.jar
+!gradle-wrapper.jar
+
+# Spring Boot
+*.log
+application-local.yml
+
+# Node / React
+node_modules/
+dist/
+.env
+.env.local
+
+# IDE
+.idea/
+*.iml
+.vscode/settings.json
+
+# Docker
+*.env
