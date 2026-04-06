@@ -24,4 +24,24 @@ public class Asteroid {
     private double eccentricity;
     private double inclination;
     private LocalDateTime ingested_at;
+
+    public void setHazardous(boolean b) {
+        is_potentially_hazardous = b;
+    }
+
+    public void setExternalId(String s) {
+        neo_id = s;
+    }
+
+    public void setCloseApproachDate(LocalDate now) {
+        close_approach_date = now;
+    }
+
+    public void setMissDistanceKm(double v) {
+        miss_distance_km = v;
+    }
+
+    public void setIngestedAt(LocalDateTime now) {
+        ingested_at = now;
+    }
 }
