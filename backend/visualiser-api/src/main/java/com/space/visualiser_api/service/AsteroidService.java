@@ -5,8 +5,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.space.visualiser_api.entity.Asteroid;
 import com.space.visualiser_api.repository.AsteroidRepository;
+import com.space.visualiser_api.visualiser.ingestion.NeoWsIngestionJob;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -20,17 +22,20 @@ import java.util.List;
 public class AsteroidService {
 
     private final AsteroidRepository asteroidRepository;
+    private final NeoWsIngestionJob neoWsIngestionJob;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final Duration cacheTtl;
 
     public AsteroidService(
             AsteroidRepository asteroidRepository,
+            NeoWsIngestionJob neoWsIngestionJob,
             StringRedisTemplate redisTemplate,
             ObjectMapper objectMapper,
             @Value("${app.asteroids.cache-ttl:PT6H}") Duration cacheTtl
     ) {
         this.asteroidRepository = asteroidRepository;
+        this.neoWsIngestionJob = neoWsIngestionJob;
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
         this.cacheTtl = cacheTtl;
@@ -51,6 +56,9 @@ public class AsteroidService {
         List<Asteroid> asteroids = asteroidRepository
                 .findByCloseApproachDateBetweenOrderByCloseApproachDateAsc(startDate, endDate);
         if (asteroids.isEmpty()) {
+            asteroids = backfillFromSource(startDate, endDate);
+        }
+        if (asteroids.isEmpty()) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
                     "Asteroids not found for range " + startDate + " to " + endDate
@@ -59,6 +67,20 @@ public class AsteroidService {
 
         writeToCache(cacheKey, asteroids);
         return asteroids;
+    }
+
+    private List<Asteroid> backfillFromSource(LocalDate startDate, LocalDate endDate) {
+        try {
+            neoWsIngestionJob.fetchAsteroidsForRange(startDate, endDate);
+        } catch (IllegalStateException exception) {
+            throw new ResponseStatusException(
+                    HttpStatusCode.valueOf(502),
+                    "Failed to fetch asteroids from NASA source",
+                    exception
+            );
+        }
+
+        return asteroidRepository.findByCloseApproachDateBetweenOrderByCloseApproachDateAsc(startDate, endDate);
     }
 
     private List<Asteroid> readFromCache(String cacheKey) {
