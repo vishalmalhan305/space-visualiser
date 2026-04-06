@@ -10,7 +10,9 @@ public class ApodResponseDto {
     private String explanation;
     private String url;
     private String hdurl;
+
     @JsonProperty("media_type")
     private String mediaType;
 
+    private String copyright;
 }
