@@ -1,20 +1,26 @@
 package com.space.visualiser_api.visualiser.ingestion;
 
-import com.space.visualiser_api.entity.ApodEntry;
-import com.space.visualiser_api.repository.ApodRepository;
-import com.space.visualiser_api.visualiser.dto.ApodResponseDto;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import com.space.visualiser_api.entity.ApodEntry;
+import com.space.visualiser_api.repository.ApodRepository;
+import com.space.visualiser_api.visualiser.dto.ApodResponseDto;
 
 @Component
 public class ApodIngestionJob {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ApodIngestionJob.class);
 
     private final WebClient nasaWebClient;
     private final ApodRepository apodRepository;
@@ -25,7 +31,7 @@ public class ApodIngestionJob {
             WebClient nasaWebClient,
             ApodRepository apodRepository,
             StringRedisTemplate redisTemplate,
-            @Value("${app.nasa.api-key:DEMO_KEY}") String nasaApiKey
+            @Value("${app.nasa.api-key:${NASA_API_KEY:DEMO_KEY}}") String nasaApiKey
     ) {
         this.nasaWebClient = nasaWebClient;
         this.apodRepository = apodRepository;
@@ -35,26 +41,43 @@ public class ApodIngestionJob {
 
     @Scheduled(cron = "0 5 0 * * *", zone = "UTC")
     public void fetchTodayApod() {
-        fetchApodForDate(LocalDate.now(ZoneOffset.UTC));
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        try {
+            fetchApodForDate(today);
+        } catch (RuntimeException exception) {
+            LOGGER.warn("APOD scheduled ingestion failed for {}: {}", today, exception.getMessage());
+        }
     }
 
     public void ensureTodayApodExists() {
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
         if (!apodRepository.existsById(today)) {
-            fetchApodForDate(today);
+            try {
+                fetchApodForDate(today);
+            } catch (RuntimeException exception) {
+                LOGGER.warn("APOD startup seed skipped for {}: {}", today, exception.getMessage());
+            }
         }
     }
 
-    private void fetchApodForDate(LocalDate date) {
-        ApodResponseDto response = nasaWebClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/planetary/apod")
-                        .queryParam("api_key", nasaApiKey)
-                        .queryParam("date", date)
-                        .build())
-                .retrieve()
-                .bodyToMono(ApodResponseDto.class)
-                .block();
+    public void fetchApodForDate(LocalDate date) {
+        ApodResponseDto response;
+        try {
+            response = nasaWebClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/planetary/apod")
+                            .queryParam("api_key", nasaApiKey)
+                            .queryParam("date", date)
+                            .build())
+                    .retrieve()
+                    .bodyToMono(ApodResponseDto.class)
+                    .block();
+        } catch (WebClientResponseException exception) {
+            throw new IllegalStateException(
+                    "NASA APOD request failed with status " + exception.getStatusCode().value(),
+                    exception
+            );
+        }
 
         if (response == null) {
             throw new IllegalStateException("NASA APOD response was empty");
