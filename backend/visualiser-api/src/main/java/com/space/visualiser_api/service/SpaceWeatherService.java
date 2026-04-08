@@ -15,11 +15,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.space.visualiser_api.controller.dto.MonthlyWeatherStatsDto;
 import com.space.visualiser_api.entity.SpaceWeatherEvent;
 import com.space.visualiser_api.repository.SpaceWeatherEventRepository;
+import com.space.visualiser_api.entity.SpaceWeatherEventType;
 import io.micrometer.core.instrument.Counter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -68,6 +73,14 @@ public class SpaceWeatherService {
                 repository.findByStartTimeGreaterThanEqualOrderByStartTimeDesc(startTime);
         writeToCache(cacheKey, events);
         return events;
+    }
+
+    public Page<SpaceWeatherEvent> getWeatherPage(SpaceWeatherEventType type, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("startTime").descending());
+        if (type != null) {
+            return repository.findByType(type, pageable);
+        }
+        return repository.findAll(pageable);
     }
 
     public List<MonthlyWeatherStatsDto> getMonthlyStats() {

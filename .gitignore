@@ -22,3 +22,9 @@ dist/
 
 # Docker
 *.env
+
+.agent
+
+CODEBASE_SUMMARY.md
+DEVELOPMENT_RULES.md
+DESIGN_DECISIONS.md

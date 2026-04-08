@@ -86,7 +86,7 @@ export function StatusBar() {
         label="NEO"
         value={`${neoCount} this week`}
         loading={neoLoading}
-        href="/asteroids"
+        href="/#asteroids"
       />
 
       {/* Hazardous badge – red when > 0 */}
@@ -96,17 +96,17 @@ export function StatusBar() {
         value={hazardous === 0 ? 'None' : `${hazardous} detected`}
         accent={hazardous > 0 ? 'text-red-400' : 'text-green-400'}
         loading={neoLoading}
-        href="/asteroids"
+        href="/#asteroids"
       />
 
       {/* Solar weather */}
       <Badge
         icon={<Sun className="w-3.5 h-3.5" />}
         label="SOLAR"
-        value={`${solarStatus} (${peakFlare.split('.')[0]})`}
+        value={`${solarStatus} (${(peakFlare || 'Quiet').split('.')[0]})`}
         accent={solarColors[solarStatus]}
         loading={weatherLoading}
-        href="/solar"
+        href="/#solar"
       />
 
       {/* ISS live dot */}
@@ -116,7 +116,7 @@ export function StatusBar() {
         value="LIVE"
         accent="text-electric-blue"
         loading={false}
-        href="/iss"
+        href="/#iss"
       />
     </div>
   );

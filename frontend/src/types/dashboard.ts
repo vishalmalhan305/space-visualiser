@@ -15,7 +15,7 @@ export interface Asteroid {
 }
 
 // Space Weather Event (Mirrors Backend SpaceWeatherEvent entity)
-export type SpaceWeatherEventType = 'FLARE' | 'CME' | 'STORM' | 'PARTICLE';
+export type SpaceWeatherEventType = 'FLARE' | 'CME' | 'GST' | 'SEP';
 
 export interface SpaceWeatherEvent {
   eventId: string;

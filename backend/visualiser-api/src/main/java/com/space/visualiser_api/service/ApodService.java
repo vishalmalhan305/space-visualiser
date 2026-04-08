@@ -38,6 +38,7 @@ public class ApodService {
 
     public ApodService(
             ApodRepository apodRepository,
+            ApodIngestionJob apodIngestionJob,
             StringRedisTemplate redisTemplate,
             ObjectMapper objectMapper,
             @Qualifier("spaceCacheHitsCounter") Counter cacheHitsCounter,

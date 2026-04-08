@@ -4,6 +4,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.space.visualiser_api.entity.SpaceWeatherEvent;
+import com.space.visualiser_api.entity.SpaceWeatherEventType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,6 +18,9 @@ public interface SpaceWeatherEventRepository extends JpaRepository<SpaceWeatherE
     List<SpaceWeatherEvent> findByStartTimeGreaterThanEqualOrderByStartTimeDesc(
             LocalDateTime startTime
     );
+
+    Page<SpaceWeatherEvent> findByType(SpaceWeatherEventType type, Pageable pageable);
+
 
     @Query("""
             select YEAR(e.startTime) as year, MONTH(e.startTime) as month, COUNT(e) as count
