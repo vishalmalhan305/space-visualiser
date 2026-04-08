@@ -1,61 +1,76 @@
 import { Navbar } from './components/layout/Navbar';
 import { ApodHero } from './components/apod/ApodHero';
 import { ApodArchive } from './components/apod/ApodArchive';
-import { Cpu, Globe, Zap } from 'lucide-react';
+import { AsteroidTracker } from './components/dashboard/AsteroidTracker';
+import { SolarWeatherWidget } from './components/dashboard/SolarWeatherWidget';
+import { IssTracker } from './components/dashboard/IssTracker';
+
+function SectionDivider({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-4 my-8">
+      <div className="flex-1 h-px bg-white/5" />
+      <span className="text-[10px] uppercase tracking-[0.25em] text-gray-600 font-mono whitespace-nowrap">
+        {label}
+      </span>
+      <div className="flex-1 h-px bg-white/5" />
+    </div>
+  );
+}
 
 function App() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-space-dark">
       <Navbar />
-      
+
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        {/* Dashboard Indicators */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
-          <div className="glass-panel p-4 rounded-xl flex items-center gap-4 border-l-4 border-l-electric-blue">
-            <div className="p-3 bg-electric-blue/10 rounded-lg">
-              <Globe className="text-electric-blue w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-widest text-gray-500 font-mono">Telemetry Status</p>
-              <h4 className="text-white font-display font-medium">Earth Orbit / LEO</h4>
-            </div>
-          </div>
-          
-          <div className="glass-panel p-4 rounded-xl flex items-center gap-4">
-            <div className="p-3 bg-yellow-400/10 rounded-lg">
-              <Cpu className="text-yellow-400 w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-widest text-gray-500 font-mono">Process Load</p>
-              <h4 className="text-white font-display font-medium">Core Engined: 14%</h4>
-            </div>
-          </div>
-          
-          <div className="glass-panel p-4 rounded-xl flex items-center gap-4">
-            <div className="p-3 bg-red-500/10 rounded-lg">
-              <Zap className="text-red-500 w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-widest text-gray-500 font-mono">Power Reserve</p>
-              <h4 className="text-white font-display font-medium">98.4% Efficiency</h4>
-            </div>
-          </div>
-        </div>
 
-        {/* Hero Section */}
-        <ApodHero />
+        {/* ── APOD Hero ─────────────────────────────────────── */}
+        <section id="apod" aria-label="Astronomy Picture of the Day">
+          <ApodHero />
+        </section>
 
-        {/* Archive Section */}
-        <ApodArchive />
+        <SectionDivider label="Live Space Intelligence" />
+
+        {/* ── Real-Time Data Grid ───────────────────────────── */}
+        <section id="intel" aria-label="Live space intelligence">
+          {/* Top row: Asteroid tracker (wide) + Solar weather + ISS */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Asteroid fills 2 columns */}
+            <div className="lg:col-span-2" id="asteroids">
+              <AsteroidTracker />
+            </div>
+
+            {/* Solar + ISS stacked in third column */}
+            <div className="flex flex-col gap-6">
+              <div id="solar">
+                <SolarWeatherWidget />
+              </div>
+              <div id="iss">
+                <IssTracker />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <SectionDivider label="Mission Archive" />
+
+        {/* ── APOD Archive ──────────────────────────────────── */}
+        <section id="archive" aria-label="APOD mission archive">
+          <ApodArchive />
+        </section>
+
       </main>
 
       <footer className="py-8 px-6 border-t border-white/5 bg-space-dark">
-        <div className="max-w-7xl mx-auto flex justify-between items-center text-gray-500 text-xs font-mono">
-          <p>© 2026 MISSION CONTROL CORE. ALL RIGHTS RESERVED.</p>
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3 text-gray-600 text-xs font-mono">
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            <p>© 2026 SPACE CTRL · ALL SYSTEMS NOMINAL</p>
+          </div>
           <div className="flex gap-6">
             <a href="#" className="hover:text-electric-blue transition-colors">PROTOCOLS</a>
             <a href="#" className="hover:text-electric-blue transition-colors">SECURITY</a>
-            <a href="#" className="hover:text-electric-blue transition-colors">MANUALS</a>
+            <a href="#" className="hover:text-electric-blue transition-colors">NASA OPEN DATA</a>
           </div>
         </div>
       </footer>
