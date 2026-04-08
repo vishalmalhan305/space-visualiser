@@ -6,9 +6,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.space.visualiser_api.entity.Asteroid;
 import com.space.visualiser_api.repository.AsteroidRepository;
 import com.space.visualiser_api.visualiser.ingestion.NeoWsIngestionJob;
+import io.micrometer.core.instrument.Counter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.HttpStatus;
@@ -30,18 +32,24 @@ public class AsteroidService {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final Duration cacheTtl;
+    private final Counter cacheHitsCounter;
+    private final Counter cacheMissesCounter;
 
     public AsteroidService(
             AsteroidRepository asteroidRepository,
             NeoWsIngestionJob neoWsIngestionJob,
             StringRedisTemplate redisTemplate,
             ObjectMapper objectMapper,
+            @Qualifier("spaceCacheHitsCounter") Counter cacheHitsCounter,
+            @Qualifier("spaceCacheMissesCounter") Counter cacheMissesCounter,
             @Value("${app.asteroids.cache-ttl:PT6H}") Duration cacheTtl
     ) {
         this.asteroidRepository = asteroidRepository;
         this.neoWsIngestionJob = neoWsIngestionJob;
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
+        this.cacheHitsCounter = cacheHitsCounter;
+        this.cacheMissesCounter = cacheMissesCounter;
         this.cacheTtl = cacheTtl;
     }
 
@@ -54,8 +62,12 @@ public class AsteroidService {
         String cacheKey = buildCacheKey(startDate, endDate);
         List<Asteroid> cachedAsteroids = readFromCache(cacheKey);
         if (cachedAsteroids != null) {
+            LOGGER.debug("Cache HIT for key {}", cacheKey);
+            cacheHitsCounter.increment();
             return cachedAsteroids;
         }
+        LOGGER.debug("Cache MISS for key {}", cacheKey);
+        cacheMissesCounter.increment();
 
         List<Asteroid> asteroids = asteroidRepository
                 .findByCloseApproachDateBetweenOrderByCloseApproachDateAsc(startDate, endDate);
@@ -113,7 +125,7 @@ public class AsteroidService {
             String payload = objectMapper.writeValueAsString(asteroids);
             redisTemplate.opsForValue().set(cacheKey, payload, cacheTtl);
         } catch (JsonProcessingException exception) {
-            throw new IllegalStateException("Failed to serialize asteroid list for cache", exception);
+            LOGGER.warn("Failed to serialize asteroid list for cache key {}", cacheKey, exception);
         } catch (RuntimeException exception) {
             LOGGER.warn("Redis write failed for asteroid cache key {}", cacheKey, exception);
         }
