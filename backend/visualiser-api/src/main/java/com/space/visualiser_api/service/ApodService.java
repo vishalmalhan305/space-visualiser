@@ -13,6 +13,11 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.List;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 @Service
 public class ApodService {
@@ -36,6 +41,30 @@ public class ApodService {
 
     public ApodEntry getToday() {
         return getByDate(LocalDate.now(ZoneOffset.UTC));
+    }
+
+    public List<ApodEntry> getArchive(int count) {
+        String cacheKey = "apod:archive:" + count;
+        String cached = redisTemplate.opsForValue().get(cacheKey);
+        if (cached != null && !cached.isBlank()) {
+            try {
+                return objectMapper.readValue(cached, new TypeReference<List<ApodEntry>>() {});
+            } catch (JsonProcessingException e) {
+                redisTemplate.delete(cacheKey);
+            }
+        }
+
+        PageRequest page = PageRequest.of(0, count, Sort.by(Sort.Direction.DESC, "date"));
+        List<ApodEntry> entries = apodRepository.findAll(page).getContent();
+
+        try {
+            String payload = objectMapper.writeValueAsString(entries);
+            redisTemplate.opsForValue().set(cacheKey, payload, cacheTtl);
+        } catch (JsonProcessingException e) {
+            // Cache write failure is non-fatal
+        }
+
+        return entries;
     }
 
     public ApodEntry getByDate(LocalDate date) {
