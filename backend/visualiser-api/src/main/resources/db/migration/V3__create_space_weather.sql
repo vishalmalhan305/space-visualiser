@@ -8,7 +8,8 @@ CREATE TABLE space_weather_events (
     end_time         TIMESTAMP,
     class_type       VARCHAR(100),
     source_location  VARCHAR(100),
-    link             VARCHAR(1000)
+    link             VARCHAR(1000),
+    ingested_at      TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_space_weather_events_type ON space_weather_events(type);

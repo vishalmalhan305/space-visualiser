@@ -168,7 +168,22 @@ public class NeoWsIngestionJob {
             LocalDate endDate
     ) {
         List<Asteroid> asteroids = new ArrayList<>();
-        for (List<NeoWsResponseDto.NearEarthObjectDto> dailyObjects : nearEarthObjects.values()) {
+        for (Map.Entry<String, List<NeoWsResponseDto.NearEarthObjectDto>> dailyEntry : nearEarthObjects.entrySet()) {
+            LocalDate feedDate;
+            try {
+                feedDate = LocalDate.parse(dailyEntry.getKey());
+            } catch (RuntimeException exception) {
+                LOGGER.debug("Skipping NeoWs feed bucket with invalid date key {}", dailyEntry.getKey(), exception);
+                continue;
+            }
+            if (feedDate.isBefore(startDate) || feedDate.isAfter(endDate)) {
+                continue;
+            }
+
+            List<NeoWsResponseDto.NearEarthObjectDto> dailyObjects = dailyEntry.getValue();
+            if (dailyObjects == null || dailyObjects.isEmpty()) {
+                continue;
+            }
             for (NeoWsResponseDto.NearEarthObjectDto objectDto : dailyObjects) {
                 if (objectDto == null
                         || objectDto.getCloseApproachData() == null
@@ -178,10 +193,9 @@ public class NeoWsIngestionJob {
                     continue;
                 }
 
-                NeoWsResponseDto.CloseApproachDataDto approachData = findApproachDataInRange(
+                NeoWsResponseDto.CloseApproachDataDto approachData = findApproachDataForDate(
                         objectDto.getCloseApproachData(),
-                        startDate,
-                        endDate
+                        feedDate
                 );
                 if (approachData == null) {
                     continue;
@@ -219,10 +233,9 @@ public class NeoWsIngestionJob {
         return asteroids;
     }
 
-    private NeoWsResponseDto.CloseApproachDataDto findApproachDataInRange(
+    private NeoWsResponseDto.CloseApproachDataDto findApproachDataForDate(
             List<NeoWsResponseDto.CloseApproachDataDto> closeApproachData,
-            LocalDate startDate,
-            LocalDate endDate
+            LocalDate feedDate
     ) {
         for (NeoWsResponseDto.CloseApproachDataDto approachData : closeApproachData) {
             if (approachData == null || approachData.getCloseApproachDate() == null) {
@@ -230,7 +243,7 @@ public class NeoWsIngestionJob {
             }
             try {
                 LocalDate approachDate = LocalDate.parse(approachData.getCloseApproachDate());
-                if (!approachDate.isBefore(startDate) && !approachDate.isAfter(endDate)) {
+                if (approachDate.equals(feedDate)) {
                     return approachData;
                 }
             } catch (RuntimeException exception) {
