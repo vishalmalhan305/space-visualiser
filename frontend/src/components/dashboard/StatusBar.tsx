@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
-import { asteroidService } from '../../services/asteroidService';
-import { solarService } from '../../services/solarService';
+import { useAsteroidsWeek } from '../../hooks/useAsteroids';
+import { useRecentWeather } from '../../hooks/useWeather';
 import { AlertTriangle, Sun, Satellite, Zap, Activity } from 'lucide-react';
+import type { SpaceWeatherEvent } from '../../types/dashboard';
 
 const solarColors = {
   Nominal: 'text-green-400',
@@ -39,19 +39,35 @@ function Badge({
   return href ? <a href={href}>{inner}</a> : inner;
 }
 
+function getStatusFromEvents(events: SpaceWeatherEvent[] = []) {
+  if (events.length === 0) return { status: 'Nominal' as const, peak: 'Quiet' };
+
+  let status: keyof typeof solarColors = 'Nominal';
+  let peak = 'Quiet';
+
+  events.forEach(e => {
+    if (e.classType?.startsWith('X')) {
+      status = 'Extreme';
+      peak = e.classType;
+    } else if (e.classType?.startsWith('M') && status !== 'Extreme') {
+      status = 'High';
+      peak = e.classType;
+    } else if (e.classType?.startsWith('C') && status === 'Nominal') {
+      status = 'Elevated';
+      peak = e.classType;
+    }
+  });
+
+  return { status, peak };
+}
+
 export function StatusBar() {
-  const { data: neo, isLoading: neoLoading } = useQuery({
-    queryKey: ['asteroids-weekly'],
-    queryFn: asteroidService.getWeeklySummary,
-  });
+  const { data: neo, isLoading: neoLoading } = useAsteroidsWeek();
+  const { data: weather, isLoading: weatherLoading } = useRecentWeather(7);
 
-  const { data: solar, isLoading: solarLoading } = useQuery({
-    queryKey: ['solar-summary'],
-    queryFn: solarService.getSummary,
-  });
-
-  const hazardous = neo?.hazardous_count ?? 0;
-  const solarStatus = solar?.status ?? 'Nominal';
+  const neoCount = neo?.length ?? 0;
+  const hazardous = neo?.filter(a => a.potentiallyHazardous).length ?? 0;
+  const { status: solarStatus, peak: peakFlare } = getStatusFromEvents(weather);
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
@@ -68,9 +84,9 @@ export function StatusBar() {
       <Badge
         icon={<Zap className="w-3.5 h-3.5" />}
         label="NEO"
-        value={`${neo?.element_count ?? 0} this week`}
+        value={`${neoCount} this week`}
         loading={neoLoading}
-        href="#asteroids"
+        href="/asteroids"
       />
 
       {/* Hazardous badge – red when > 0 */}
@@ -80,17 +96,17 @@ export function StatusBar() {
         value={hazardous === 0 ? 'None' : `${hazardous} detected`}
         accent={hazardous > 0 ? 'text-red-400' : 'text-green-400'}
         loading={neoLoading}
-        href="#asteroids"
+        href="/asteroids"
       />
 
       {/* Solar weather */}
       <Badge
         icon={<Sun className="w-3.5 h-3.5" />}
         label="SOLAR"
-        value={`${solarStatus} (${solar?.flareClass ?? '—'})`}
+        value={`${solarStatus} (${peakFlare.split('.')[0]})`}
         accent={solarColors[solarStatus]}
-        loading={solarLoading}
-        href="#solar"
+        loading={weatherLoading}
+        href="/solar"
       />
 
       {/* ISS live dot */}
@@ -100,7 +116,7 @@ export function StatusBar() {
         value="LIVE"
         accent="text-electric-blue"
         loading={false}
-        href="#iss"
+        href="/iss"
       />
     </div>
   );

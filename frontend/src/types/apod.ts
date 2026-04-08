@@ -1,10 +1,10 @@
 export interface ApodEntry {
   date: string;
-  explanation: string;
-  hdurl?: string;
-  media_type: 'image' | 'video';
-  service_version: string;
   title: string;
+  explanation: string;
   url: string;
+  hdurl?: string;
+  mediaType: 'image' | 'video';
   copyright?: string;
+  fetchedAt?: string;
 }

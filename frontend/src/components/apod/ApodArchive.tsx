@@ -1,20 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import type { ApodEntry } from '../../types/apod';
-import { apodService } from '../../services/apodService';
+import React from 'react';
+import { useApodArchive } from '../../hooks/useApod';
 import { ChevronLeft, ChevronRight, Play } from 'lucide-react';
 
 export const ApodArchive: React.FC = () => {
-  const [entries, setEntries] = useState<ApodEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: entries, isLoading, isError } = useApodArchive(30);
 
-  useEffect(() => {
-    apodService.getArchive().then(res => {
-      setEntries(res);
-      setLoading(false);
-    });
-  }, []);
+  if (isError) return null;
 
-  if (loading) {
+  if (isLoading || !entries) {
     return (
       <div className="py-12">
         <h2 className="font-display text-2xl mb-6 text-white text-left tracking-tight">Mission History</h2>
@@ -53,7 +46,7 @@ export const ApodArchive: React.FC = () => {
                 alt={entry.title} 
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 opacity-70 group-hover:opacity-100"
               />
-              {entry.media_type === 'video' && (
+              {entry.mediaType === 'video' && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-12 h-12 bg-electric-blue/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-electric-blue/50">
                     <Play className="w-6 h-6 text-electric-blue fill-electric-blue" />

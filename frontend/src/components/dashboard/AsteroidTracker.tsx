@@ -1,5 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
-import { asteroidService } from '../../services/asteroidService';
+import { useAsteroidsWeek } from '../../hooks/useAsteroids';
 import { AlertTriangle, Radar, ArrowRight } from 'lucide-react';
 
 function RowSkeleton() {
@@ -13,11 +12,11 @@ function RowSkeleton() {
 }
 
 export function AsteroidTracker() {
-  const { data, isLoading } = useQuery({
-    queryKey: ['asteroids-weekly'],
-    queryFn: asteroidService.getWeeklySummary,
-    refetchInterval: 5 * 60_000, // refresh every 5 min
-  });
+  const { data: asteroids, isLoading } = useAsteroidsWeek();
+
+  // Calculate summaries from the flat list
+  const elementCount = asteroids?.length ?? 0;
+  const hazardousCount = asteroids?.filter(a => a.potentiallyHazardous).length ?? 0;
 
   return (
     <div className="glass-panel rounded-xl overflow-hidden flex flex-col">
@@ -34,12 +33,12 @@ export function AsteroidTracker() {
         ) : (
           <div className="flex items-center gap-2 text-xs font-mono">
             <span className="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-full">
-              This Week: {data?.element_count ?? 0}
+              This Week: {elementCount}
             </span>
-            {(data?.hazardous_count ?? 0) > 0 && (
+            {hazardousCount > 0 && (
               <span className="bg-red-500/20 text-red-400 border border-red-500/30 px-2.5 py-1 rounded-full flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" />
-                {data!.hazardous_count} Hazardous
+                {hazardousCount} Hazardous
               </span>
             )}
           </div>
@@ -65,22 +64,24 @@ export function AsteroidTracker() {
               </tr>
             </thead>
             <tbody>
-              {data?.asteroids.map((ast) => (
+              {asteroids?.map((ast) => (
                 <tr
-                  key={ast.id}
+                  key={ast.neoId}
                   className="border-b border-white/5 hover:bg-white/5 transition-colors"
                 >
                   <td className="px-4 py-3 text-gray-200">{ast.name}</td>
-                  <td className="px-4 py-3 text-right text-gray-400">{ast.estimated_diameter_km.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right text-gray-400">{ast.close_approach_date}</td>
                   <td className="px-4 py-3 text-right text-gray-400">
-                    {(ast.miss_distance_km / 1_000_000).toFixed(2)}M
+                    {((ast.estDiameterKmMin + ast.estDiameterKmMax) / 2).toFixed(2)}
+                  </td>
+                  <td className="px-4 py-3 text-right text-gray-400">{ast.closeApproachDate}</td>
+                  <td className="px-4 py-3 text-right text-gray-400">
+                    {(ast.missDistanceKm / 1_000_000).toFixed(2)}M
                   </td>
                   <td className="px-4 py-3 text-right text-gray-400">
-                    {ast.relative_velocity_km_h.toLocaleString()}
+                    {ast.velocity_kmh.toLocaleString()}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    {ast.is_potentially_hazardous ? (
+                    {ast.potentiallyHazardous ? (
                       <span className="inline-flex items-center gap-1 text-red-400 bg-red-500/10 border border-red-500/30 px-2 py-0.5 rounded-full">
                         <AlertTriangle className="w-3 h-3" /> PHO
                       </span>
