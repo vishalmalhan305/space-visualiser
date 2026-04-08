@@ -5,8 +5,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.space.visualiser_api.entity.Asteroid;
 import com.space.visualiser_api.repository.AsteroidRepository;
+import com.space.visualiser_api.visualiser.ingestion.NeoWsIngestionJob;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -19,18 +23,23 @@ import java.util.List;
 @Service
 public class AsteroidService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(AsteroidService.class);
+
     private final AsteroidRepository asteroidRepository;
+    private final NeoWsIngestionJob neoWsIngestionJob;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final Duration cacheTtl;
 
     public AsteroidService(
             AsteroidRepository asteroidRepository,
+            NeoWsIngestionJob neoWsIngestionJob,
             StringRedisTemplate redisTemplate,
             ObjectMapper objectMapper,
             @Value("${app.asteroids.cache-ttl:PT6H}") Duration cacheTtl
     ) {
         this.asteroidRepository = asteroidRepository;
+        this.neoWsIngestionJob = neoWsIngestionJob;
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
         this.cacheTtl = cacheTtl;
@@ -51,6 +60,9 @@ public class AsteroidService {
         List<Asteroid> asteroids = asteroidRepository
                 .findByCloseApproachDateBetweenOrderByCloseApproachDateAsc(startDate, endDate);
         if (asteroids.isEmpty()) {
+            asteroids = backfillFromSource(startDate, endDate);
+        }
+        if (asteroids.isEmpty()) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
                     "Asteroids not found for range " + startDate + " to " + endDate
@@ -61,8 +73,28 @@ public class AsteroidService {
         return asteroids;
     }
 
+    private List<Asteroid> backfillFromSource(LocalDate startDate, LocalDate endDate) {
+        try {
+            neoWsIngestionJob.fetchAsteroidsForRange(startDate, endDate);
+        } catch (IllegalStateException exception) {
+            throw new ResponseStatusException(
+                    HttpStatusCode.valueOf(502),
+                    "Failed to fetch asteroids from NASA source",
+                    exception
+            );
+        }
+
+        return asteroidRepository.findByCloseApproachDateBetweenOrderByCloseApproachDateAsc(startDate, endDate);
+    }
+
     private List<Asteroid> readFromCache(String cacheKey) {
-        String cachedValue = redisTemplate.opsForValue().get(cacheKey);
+        String cachedValue;
+        try {
+            cachedValue = redisTemplate.opsForValue().get(cacheKey);
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Redis read failed for asteroid cache key {}", cacheKey, exception);
+            return null;
+        }
         if (cachedValue == null || cachedValue.isBlank()) {
             return null;
         }
@@ -71,7 +103,7 @@ public class AsteroidService {
             return objectMapper.readValue(cachedValue, new TypeReference<>() {
             });
         } catch (JsonProcessingException exception) {
-            redisTemplate.delete(cacheKey);
+            safeDeleteCacheKey(cacheKey);
             return null;
         }
     }
@@ -82,6 +114,16 @@ public class AsteroidService {
             redisTemplate.opsForValue().set(cacheKey, payload, cacheTtl);
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to serialize asteroid list for cache", exception);
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Redis write failed for asteroid cache key {}", cacheKey, exception);
+        }
+    }
+
+    private void safeDeleteCacheKey(String cacheKey) {
+        try {
+            redisTemplate.delete(cacheKey);
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Redis delete failed for asteroid cache key {}", cacheKey, exception);
         }
     }
 

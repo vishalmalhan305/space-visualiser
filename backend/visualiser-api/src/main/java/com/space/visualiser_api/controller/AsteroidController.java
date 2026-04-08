@@ -3,10 +3,12 @@ package com.space.visualiser_api.controller;
 import com.space.visualiser_api.entity.Asteroid;
 import com.space.visualiser_api.service.AsteroidService;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -30,7 +32,10 @@ public class AsteroidController {
             return asteroidService.getCurrentWeek();
         }
         if (start == null || end == null) {
-            throw new IllegalArgumentException("Both start and end must be provided together");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Both start and end must be provided together"
+            );
         }
         return asteroidService.getByDateRange(start, end);
     }

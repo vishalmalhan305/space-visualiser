@@ -156,26 +156,50 @@ public class NeoWsIngestionJob {
                 throw new IllegalStateException("NASA NeoWs response was empty");
             }
 
-            List<Asteroid> asteroids = mapResponse(response.getNearEarthObjects());
+            List<Asteroid> asteroids = mapResponse(response.getNearEarthObjects(), startDate, endDate);
             asteroidRepository.saveAll(asteroids);
             evictRangeCaches(startDate, endDate);
         });
     }
 
-    private List<Asteroid> mapResponse(Map<String, List<NeoWsResponseDto.NearEarthObjectDto>> nearEarthObjects) {
+    private List<Asteroid> mapResponse(
+            Map<String, List<NeoWsResponseDto.NearEarthObjectDto>> nearEarthObjects,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
         List<Asteroid> asteroids = new ArrayList<>();
-        for (List<NeoWsResponseDto.NearEarthObjectDto> dailyObjects : nearEarthObjects.values()) {
+        for (Map.Entry<String, List<NeoWsResponseDto.NearEarthObjectDto>> dailyEntry : nearEarthObjects.entrySet()) {
+            LocalDate feedDate;
+            try {
+                feedDate = LocalDate.parse(dailyEntry.getKey());
+            } catch (RuntimeException exception) {
+                LOGGER.debug("Skipping NeoWs feed bucket with invalid date key {}", dailyEntry.getKey(), exception);
+                continue;
+            }
+            if (feedDate.isBefore(startDate) || feedDate.isAfter(endDate)) {
+                continue;
+            }
+
+            List<NeoWsResponseDto.NearEarthObjectDto> dailyObjects = dailyEntry.getValue();
+            if (dailyObjects == null || dailyObjects.isEmpty()) {
+                continue;
+            }
             for (NeoWsResponseDto.NearEarthObjectDto objectDto : dailyObjects) {
                 if (objectDto == null
                         || objectDto.getCloseApproachData() == null
                         || objectDto.getCloseApproachData().isEmpty()
-                        || objectDto.getOrbitalData() == null
                         || objectDto.getEstimatedDiameter() == null
                         || objectDto.getEstimatedDiameter().getKilometers() == null) {
                     continue;
                 }
 
-                NeoWsResponseDto.CloseApproachDataDto approachData = objectDto.getCloseApproachData().getFirst();
+                NeoWsResponseDto.CloseApproachDataDto approachData = findApproachDataForDate(
+                        objectDto.getCloseApproachData(),
+                        feedDate
+                );
+                if (approachData == null) {
+                    continue;
+                }
                 if (approachData.getRelativeVelocity() == null || approachData.getMissDistance() == null) {
                     continue;
                 }
@@ -190,9 +214,15 @@ public class NeoWsIngestionJob {
                     asteroid.setCloseApproachDate(LocalDate.parse(approachData.getCloseApproachDate()));
                     asteroid.setVelocity_kmh(parseDouble(approachData.getRelativeVelocity().getKilometersPerHour()));
                     asteroid.setMissDistanceKm(parseDouble(approachData.getMissDistance().getKilometers()));
-                    asteroid.setSemi_major_axis(parseDouble(objectDto.getOrbitalData().getSemiMajorAxis()));
-                    asteroid.setEccentricity(parseDouble(objectDto.getOrbitalData().getEccentricity()));
-                    asteroid.setInclination(parseDouble(objectDto.getOrbitalData().getInclination()));
+                    asteroid.setSemi_major_axis(parseDoubleOrDefault(
+                            objectDto.getOrbitalData() != null ? objectDto.getOrbitalData().getSemiMajorAxis() : null
+                    ));
+                    asteroid.setEccentricity(parseDoubleOrDefault(
+                            objectDto.getOrbitalData() != null ? objectDto.getOrbitalData().getEccentricity() : null
+                    ));
+                    asteroid.setInclination(parseDoubleOrDefault(
+                            objectDto.getOrbitalData() != null ? objectDto.getOrbitalData().getInclination() : null
+                    ));
                     asteroid.setIngestedAt(LocalDateTime.now(ZoneOffset.UTC));
                     asteroids.add(asteroid);
                 } catch (RuntimeException exception) {
@@ -201,6 +231,26 @@ public class NeoWsIngestionJob {
             }
         }
         return asteroids;
+    }
+
+    private NeoWsResponseDto.CloseApproachDataDto findApproachDataForDate(
+            List<NeoWsResponseDto.CloseApproachDataDto> closeApproachData,
+            LocalDate feedDate
+    ) {
+        for (NeoWsResponseDto.CloseApproachDataDto approachData : closeApproachData) {
+            if (approachData == null || approachData.getCloseApproachDate() == null) {
+                continue;
+            }
+            try {
+                LocalDate approachDate = LocalDate.parse(approachData.getCloseApproachDate());
+                if (approachDate.equals(feedDate)) {
+                    return approachData;
+                }
+            } catch (RuntimeException exception) {
+                LOGGER.debug("Skipping NeoWs close approach data with invalid date", exception);
+            }
+        }
+        return null;
     }
 
     private void evictRangeCaches(LocalDate startDate, LocalDate endDate) {
@@ -218,5 +268,12 @@ public class NeoWsIngestionJob {
 
     private double parseDouble(String value) {
         return Double.parseDouble(value);
+    }
+
+    private double parseDoubleOrDefault(String value) {
+        if (value == null || value.isBlank()) {
+            return 0.0;
+        }
+        return parseDouble(value);
     }
 }
