@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.space.visualiser_api.controller.dto.MonthlyWeatherStatsDto;
 import com.space.visualiser_api.entity.SpaceWeatherEvent;
 import com.space.visualiser_api.service.SpaceWeatherService;
 import io.github.bucket4j.Bandwidth;
@@ -42,6 +43,12 @@ public class SpaceWeatherController {
     ) {
         enforceRateLimit(request);
         return service.getRecentEvents(days);
+    }
+
+    @GetMapping("/stats/monthly")
+    public List<MonthlyWeatherStatsDto> getMonthlyStats(HttpServletRequest request) {
+        enforceRateLimit(request);
+        return service.getMonthlyStats();
     }
 
     private void enforceRateLimit(HttpServletRequest request) {

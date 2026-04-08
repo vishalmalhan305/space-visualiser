@@ -3,12 +3,16 @@ package com.space.visualiser_api.service;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.ZoneOffset;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.space.visualiser_api.controller.dto.MonthlyWeatherStatsDto;
 import com.space.visualiser_api.entity.SpaceWeatherEvent;
 import com.space.visualiser_api.repository.SpaceWeatherEventRepository;
 import io.micrometer.core.instrument.Counter;
@@ -64,6 +68,31 @@ public class SpaceWeatherService {
                 repository.findByStartTimeGreaterThanEqualOrderByStartTimeDesc(startTime);
         writeToCache(cacheKey, events);
         return events;
+    }
+
+    public List<MonthlyWeatherStatsDto> getMonthlyStats() {
+        LocalDateTime fromDate = LocalDate.of(2015, 1, 1).atStartOfDay();
+        List<SpaceWeatherEventRepository.MonthlyEventCountProjection> aggregated =
+                repository.countMonthlyFrom(fromDate);
+
+        Map<YearMonth, Long> countsByMonth = new HashMap<>();
+        for (SpaceWeatherEventRepository.MonthlyEventCountProjection item : aggregated) {
+            if (item.getYear() == null || item.getMonth() == null || item.getCount() == null) {
+                continue;
+            }
+            countsByMonth.put(YearMonth.of(item.getYear(), item.getMonth()), item.getCount());
+        }
+
+        YearMonth start = YearMonth.of(2015, 1);
+        YearMonth end = YearMonth.now(ZoneOffset.UTC);
+        List<MonthlyWeatherStatsDto> result = new java.util.ArrayList<>();
+        YearMonth current = start;
+        while (!current.isAfter(end)) {
+            long count = countsByMonth.getOrDefault(current, 0L);
+            result.add(new MonthlyWeatherStatsDto(current.getYear(), current.getMonthValue(), count));
+            current = current.plusMonths(1);
+        }
+        return result;
     }
 
     private List<SpaceWeatherEvent> readFromCache(String cacheKey) {

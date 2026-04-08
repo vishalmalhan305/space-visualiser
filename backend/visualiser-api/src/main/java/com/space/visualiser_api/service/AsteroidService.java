@@ -3,6 +3,7 @@ package com.space.visualiser_api.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.space.visualiser_api.controller.dto.AsteroidOrbitDto;
 import com.space.visualiser_api.entity.Asteroid;
 import com.space.visualiser_api.repository.AsteroidRepository;
 import com.space.visualiser_api.visualiser.ingestion.NeoWsIngestionJob;
@@ -83,6 +84,25 @@ public class AsteroidService {
 
         writeToCache(cacheKey, asteroids);
         return asteroids;
+    }
+
+    public Asteroid getByNeoId(String neoId) {
+        return asteroidRepository.findById(neoId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Asteroid not found for neoId " + neoId
+                ));
+    }
+
+    public AsteroidOrbitDto getOrbitByNeoId(String neoId) {
+        Asteroid asteroid = getByNeoId(neoId);
+        return new AsteroidOrbitDto(
+                asteroid.getNeoId(),
+                asteroid.getName(),
+                asteroid.getSemi_major_axis(),
+                asteroid.getEccentricity(),
+                asteroid.getInclination()
+        );
     }
 
     private List<Asteroid> backfillFromSource(LocalDate startDate, LocalDate endDate) {
