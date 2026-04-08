@@ -40,11 +40,15 @@ class ApodServiceTest {
     private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
     private ApodService apodService;
 
+    @Mock
+    private com.space.visualiser_api.visualiser.ingestion.ApodIngestionJob apodIngestionJob;
+
     @BeforeEach
     void setUp() {
         lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         apodService = new ApodService(
                 apodRepository,
+                apodIngestionJob,
                 redisTemplate,
                 objectMapper,
                 cacheHitsCounter,

@@ -9,9 +9,11 @@ export const ENDPOINTS = {
     WEEK: '/api/asteroids/week',
     DETAILS: (id: string) => `/api/asteroids/${id}`,
     ORBIT: (id: string) => `/api/asteroids/${id}/orbit`,
+    PAGE: '/api/asteroids/page',
   },
   WEATHER: {
     RECENT: (days: number) => `/api/weather/recent?days=${days}`,
+    PAGE: '/api/weather/page',
   },
   ISS: {
     POSITION: '/api/iss/position', // Assumed from previous spec

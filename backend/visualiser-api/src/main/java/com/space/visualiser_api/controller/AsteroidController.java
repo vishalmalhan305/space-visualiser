@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.data.domain.Page;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -55,5 +56,14 @@ public class AsteroidController {
     @GetMapping("/{neoId}/orbit")
     public AsteroidOrbitDto getOrbit(@PathVariable String neoId) {
         return asteroidService.getOrbitByNeoId(neoId);
+    }
+
+    @GetMapping("/page")
+    public Page<Asteroid> getAsteroidsPage(
+            @RequestParam(required = false) Boolean hazardous,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return asteroidService.getAsteroidsPage(hazardous, page, size);
     }
 }

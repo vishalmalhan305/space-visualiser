@@ -7,6 +7,9 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 @Repository
 public interface AsteroidRepository extends JpaRepository<Asteroid, String> {
 
@@ -14,4 +17,6 @@ public interface AsteroidRepository extends JpaRepository<Asteroid, String> {
             LocalDate start,
             LocalDate end
     );
+
+    Page<Asteroid> findByPotentiallyHazardous(boolean potentiallyHazardous, Pageable pageable);
 }

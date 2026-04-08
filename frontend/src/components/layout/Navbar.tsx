@@ -4,10 +4,10 @@ import { StatusBar } from '../dashboard/StatusBar';
 
 const navLinks = [
   { label: 'Dashboard', href: '/',          active: true  },
-  { label: 'Asteroids',  href: '/asteroids', active: false },
+  { label: 'Asteroids',  href: '/#asteroids', active: false },
   { label: 'Mars',       href: '/mars',      active: false },
-  { label: 'Solar',      href: '/solar',     active: false },
-  { label: 'ISS',        href: '/iss',       active: false },
+  { label: 'Solar',      href: '/#solar',     active: false },
+  { label: 'ISS',        href: '/#iss',       active: false },
 ];
 
 export function Navbar() {

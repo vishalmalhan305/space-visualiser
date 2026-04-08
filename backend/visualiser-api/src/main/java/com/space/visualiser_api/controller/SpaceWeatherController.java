@@ -7,7 +7,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.space.visualiser_api.controller.dto.MonthlyWeatherStatsDto;
 import com.space.visualiser_api.entity.SpaceWeatherEvent;
+import com.space.visualiser_api.entity.SpaceWeatherEventType;
 import com.space.visualiser_api.service.SpaceWeatherService;
+import org.springframework.data.domain.Page;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Refill;
@@ -49,6 +51,17 @@ public class SpaceWeatherController {
     public List<MonthlyWeatherStatsDto> getMonthlyStats(HttpServletRequest request) {
         enforceRateLimit(request);
         return service.getMonthlyStats();
+    }
+
+    @GetMapping("/page")
+    public Page<SpaceWeatherEvent> getPage(
+            @RequestParam(required = false) SpaceWeatherEventType type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            HttpServletRequest request
+    ) {
+        enforceRateLimit(request);
+        return service.getWeatherPage(type, page, size);
     }
 
     private void enforceRateLimit(HttpServletRequest request) {

@@ -15,6 +15,10 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -57,6 +61,14 @@ public class AsteroidService {
     public List<Asteroid> getCurrentWeek() {
         LocalDate startDate = LocalDate.now(ZoneOffset.UTC);
         return getByDateRange(startDate, startDate.plusDays(6));
+    }
+
+    public Page<Asteroid> getAsteroidsPage(Boolean hazardous, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("closeApproachDate").descending());
+        if (hazardous != null) {
+            return asteroidRepository.findByPotentiallyHazardous(hazardous, pageable);
+        }
+        return asteroidRepository.findAll(pageable);
     }
 
     public List<Asteroid> getByDateRange(LocalDate startDate, LocalDate endDate) {
