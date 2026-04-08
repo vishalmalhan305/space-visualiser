@@ -37,7 +37,7 @@ class ApodServiceTest {
     @Mock
     private Counter cacheMissesCounter;
 
-    private ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
     private ApodService apodService;
 
     @BeforeEach
@@ -70,7 +70,7 @@ class ApodServiceTest {
     }
 
     @Test
-    void getByDate_CacheMiss_RepositoryHit() throws JsonProcessingException {
+    void getByDate_CacheMiss_RepositoryHit() {
         LocalDate date = LocalDate.of(2024, 6, 27);
         ApodEntry entry = new ApodEntry();
         entry.setDate(date);

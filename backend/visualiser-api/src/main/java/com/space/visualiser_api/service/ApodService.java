@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.space.visualiser_api.entity.ApodEntry;
 import com.space.visualiser_api.repository.ApodRepository;
+import com.space.visualiser_api.visualiser.ingestion.ApodIngestionJob;
 import io.micrometer.core.instrument.Counter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,7 @@ public class ApodService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ApodService.class);
 
     private final ApodRepository apodRepository;
+    private ApodIngestionJob apodIngestionJob;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final Duration cacheTtl;
@@ -43,6 +45,7 @@ public class ApodService {
             @Value("${app.apod.cache-ttl:PT24H}") Duration cacheTtl
     ) {
         this.apodRepository = apodRepository;
+        this.apodIngestionJob = apodIngestionJob;
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
         this.cacheHitsCounter = cacheHitsCounter;
@@ -94,14 +97,25 @@ public class ApodService {
         LOGGER.debug("Cache MISS for key {}", cacheKey);
         cacheMissesCounter.increment();
 
-        ApodEntry apodEntry = apodRepository.findById(date)
+        return apodRepository.findById(date)
+                .or(() -> {
+                    LOGGER.info("APOD missing in DB for date {}, attempting on-demand fetch", date);
+                    try {
+                        apodIngestionJob.fetchApodForDate(date);
+                        return apodRepository.findById(date);
+                    } catch (Exception e) {
+                        LOGGER.warn("On-demand APOD fetch failed for {}", date, e);
+                        return java.util.Optional.empty();
+                    }
+                })
+                .map(entry -> {
+                    writeToCache(cacheKey, entry);
+                    return entry;
+                })
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "APOD entry not found for date " + date
                 ));
-
-        writeToCache(cacheKey, apodEntry);
-        return apodEntry;
     }
 
     public List<ApodEntry> getByDateRange(LocalDate startDate, LocalDate endDate) {

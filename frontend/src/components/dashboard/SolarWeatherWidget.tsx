@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { solarService } from '../../services/solarService';
+import { useRecentWeather } from '../../hooks/useWeather';
 import { Sun, Flame, ArrowRight } from 'lucide-react';
+import type { SpaceWeatherEvent } from '../../types/dashboard';
 
 const statusColors = {
   Nominal:  { bg: 'bg-green-500/15',  border: 'border-green-500/40',  text: 'text-green-400'  },
@@ -9,14 +9,35 @@ const statusColors = {
   Extreme:  { bg: 'bg-red-500/15',    border: 'border-red-500/40',    text: 'text-red-400'    },
 } as const;
 
-export function SolarWeatherWidget() {
-  const { data, isLoading } = useQuery({
-    queryKey: ['solar-summary'],
-    queryFn: solarService.getSummary,
-    refetchInterval: 10 * 60_000,
+type StatusKey = keyof typeof statusColors;
+
+function getStatusFromEvents(events: SpaceWeatherEvent[] = []): { status: StatusKey; peakFlare: string } {
+  if (events.length === 0) return { status: 'Nominal', peakFlare: 'Quiet' };
+
+  let maxClass = 'Quiet';
+  let status: StatusKey = 'Nominal';
+
+  events.forEach(e => {
+    if (e.classType?.startsWith('X')) {
+      status = 'Extreme';
+      maxClass = e.classType;
+    } else if (e.classType?.startsWith('M') && status !== 'Extreme') {
+      status = 'High';
+      maxClass = e.classType;
+    } else if (e.classType?.startsWith('C') && status === 'Nominal') {
+      status = 'Elevated';
+      maxClass = e.classType;
+    }
   });
 
-  const colors = data ? statusColors[data.status] : statusColors.Nominal;
+  return { status, peakFlare: maxClass };
+}
+
+export function SolarWeatherWidget() {
+  const { data: events, isLoading } = useRecentWeather(7);
+
+  const { status, peakFlare } = getStatusFromEvents(events);
+  const colors = statusColors[status];
 
   return (
     <div className="glass-panel rounded-xl overflow-hidden flex flex-col">
@@ -39,7 +60,7 @@ export function SolarWeatherWidget() {
                 Space Weather Status
               </p>
               <p className={`text-2xl font-display font-bold ${colors.text}`}>
-                {data!.status}
+                {status}
               </p>
             </div>
             <div className="text-center">
@@ -47,14 +68,14 @@ export function SolarWeatherWidget() {
                 Peak Flare
               </p>
               <p className={`text-3xl font-display font-black ${colors.text}`}>
-                {data!.flareClass}
+                {peakFlare === 'Quiet' ? 'None' : peakFlare.split('.')[0]}
               </p>
             </div>
           </>
         )}
       </div>
 
-      {/* Recent flares */}
+      {/* Recent events */}
       <div className="flex-1 px-5 pb-4 space-y-2">
         <p className="text-[10px] uppercase tracking-widest text-gray-500 font-mono mb-3">
           Recent Events
@@ -65,18 +86,18 @@ export function SolarWeatherWidget() {
             <div className="h-10 rounded-lg bg-white/10 animate-pulse-subtle" />
           </>
         ) : (
-          data?.flares.slice(0, 3).map((f) => (
+          events?.slice(0, 3).map((e) => (
             <div
-              key={f.flrID}
+              key={e.eventId}
               className="flex items-center justify-between bg-white/5 rounded-lg px-3 py-2"
             >
               <div className="flex items-center gap-2">
                 <Flame className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-white text-xs font-mono font-semibold">{f.classType}</span>
-                <span className="text-gray-500 text-[10px]">{f.sourceLocation}</span>
+                <span className="text-white text-xs font-mono font-semibold">{e.classType || e.type}</span>
+                <span className="text-gray-500 text-[10px] truncate max-w-[100px]">{e.sourceLocation}</span>
               </div>
               <span className="text-gray-500 text-[10px] font-mono">
-                {new Date(f.peakTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {new Date(e.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
           ))

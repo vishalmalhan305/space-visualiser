@@ -1,14 +1,12 @@
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AsteroidTracker } from './AsteroidTracker';
-import { asteroidService } from '../../services/asteroidService';
+import * as asteroidHooks from '../../hooks/useAsteroids';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
-// Mock the service
-vi.mock('../../services/asteroidService', () => ({
-  asteroidService: {
-    getWeeklySummary: vi.fn(),
-  },
+// Mock the hooks
+vi.mock('../../hooks/useAsteroids', () => ({
+  useAsteroidsWeek: vi.fn(),
 }));
 
 const queryClient = new QueryClient({
@@ -26,7 +24,11 @@ describe('AsteroidTracker', () => {
   });
 
   it('renders loading skeleton initially', () => {
-    (asteroidService.getWeeklySummary as any).mockReturnValue(new Promise(() => {}));
+    (asteroidHooks.useAsteroidsWeek as any).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+
     render(
       <QueryClientProvider client={queryClient}>
         <AsteroidTracker />
@@ -36,23 +38,23 @@ describe('AsteroidTracker', () => {
   });
 
   it('renders asteroid data correctly', async () => {
-    const mockData = {
-      element_count: 10,
-      hazardous_count: 1,
-      asteroids: [
-        {
-          id: '1',
-          name: 'Killer Asteroid',
-          estimated_diameter_km: 1.5,
-          is_potentially_hazardous: true,
-          close_approach_date: '2026-05-01',
-          relative_velocity_km_h: 50000,
-          miss_distance_km: 1000000,
-        },
-      ],
-    };
+    const mockData = [
+      {
+        neoId: '1',
+        name: 'Killer Asteroid',
+        estDiameterKmMin: 1.0,
+        estDiameterKmMax: 2.0,
+        potentiallyHazardous: true,
+        closeApproachDate: '2026-05-01',
+        velocity_kmh: 50000,
+        missDistanceKm: 1000000,
+      },
+    ];
 
-    (asteroidService.getWeeklySummary as any).mockResolvedValue(mockData);
+    (asteroidHooks.useAsteroidsWeek as any).mockReturnValue({
+      data: mockData,
+      isLoading: false,
+    });
 
     render(
       <QueryClientProvider client={queryClient}>

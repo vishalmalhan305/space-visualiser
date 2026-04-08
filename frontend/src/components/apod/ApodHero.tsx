@@ -1,29 +1,34 @@
-import React, { useEffect, useState } from 'react';
-import type { ApodEntry } from '../../types/apod';
-import { apodService } from '../../services/apodService';
+import React, { useState } from 'react';
+import { useApodToday } from '../../hooks/useApod';
 import { ApodSkeleton } from './ApodSkeleton';
 import { Info, Calendar } from 'lucide-react';
 
 export const ApodHero: React.FC = () => {
-  const [data, setData] = useState<ApodEntry | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading, isError } = useApodToday();
   const [showInfo, setShowInfo] = useState(false);
 
-  useEffect(() => {
-    apodService.getToday().then((res) => {
-      setData(res);
-      setLoading(false);
-    });
-  }, []);
-
-  if (loading || !data) {
+  if (isLoading) {
     return <ApodSkeleton />;
+  }
+
+  if (isError || !data) {
+    return (
+      <section className="relative w-full h-[400px] bg-space-dark overflow-hidden rounded-2xl border border-white/10 my-6 flex items-center justify-center">
+        <div className="text-center p-8">
+          <Calendar className="w-12 h-12 text-gray-600 mb-4 mx-auto" />
+          <h3 className="text-white font-display text-xl mb-2">Today's View Unavailable</h3>
+          <p className="text-gray-400 max-w-md mx-auto">
+            Our deep space telemetry link is temporarily down. Please check back later for today's Astronomy Picture of the Day.
+          </p>
+        </div>
+      </section>
+    );
   }
 
   return (
     <section className="relative w-full h-[600px] md:h-[70vh] max-h-[800px] bg-space-dark overflow-hidden rounded-2xl border border-white/10 my-6 shadow-[0_0_40px_rgba(0,240,255,0.1)] group">
       {/* Media Background */}
-      {data.media_type === 'video' ? (
+      {data.mediaType === 'video' ? (
         <iframe
           src={data.url}
           title={data.title}

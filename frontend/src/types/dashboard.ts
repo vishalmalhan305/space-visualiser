@@ -1,40 +1,42 @@
-// Asteroid / NeoWs types
+// Asteroid / NeoWs types (Mirrors Backend Asteroid entity)
 export interface Asteroid {
-  id: string;
+  neoId: string;
   name: string;
-  estimated_diameter_km: number;
-  is_potentially_hazardous: boolean;
-  close_approach_date: string;
-  relative_velocity_km_h: number;
-  miss_distance_km: number;
+  estDiameterKmMin: number;
+  estDiameterKmMax: number;
+  potentiallyHazardous: boolean;
+  closeApproachDate: string; // ISO Date yyyy-MM-dd
+  velocity_kmh: number;
+  missDistanceKm: number;
+  semi_major_axis?: number;
+  eccentricity?: number;
+  inclination?: number;
+  ingestedAt?: string;
 }
 
-export interface AsteroidSummary {
-  element_count: number;
-  hazardous_count: number;
-  asteroids: Asteroid[];
+// Space Weather Event (Mirrors Backend SpaceWeatherEvent entity)
+export type SpaceWeatherEventType = 'FLARE' | 'CME' | 'STORM' | 'PARTICLE';
+
+export interface SpaceWeatherEvent {
+  eventId: string;
+  type: SpaceWeatherEventType;
+  startTime: string;
+  peakTime?: string;
+  endTime?: string;
+  classType?: string;
+  sourceLocation?: string;
+  link?: string;
+  ingestedAt?: string;
 }
 
-// DONKI / Solar Weather types
-export type SolarFlareClass = 'A' | 'B' | 'C' | 'M' | 'X';
-
-export interface SolarFlare {
-  flrID: string;
-  beginTime: string;
-  peakTime: string;
-  classType: string;        // e.g. "M1.0", "X2.5"
-  sourceLocation: string;
-  activeRegionNum: number;
+// Stats / Aggregates
+export interface MonthlyWeatherStats {
+  month: string;
+  count: number;
+  type?: SpaceWeatherEventType;
 }
 
-export interface SolarWeatherSummary {
-  status: 'Nominal' | 'Elevated' | 'High' | 'Extreme';
-  flareClass: SolarFlareClass;
-  flares: SolarFlare[];
-  lastUpdated: string;
-}
-
-// ISS Position type
+// ISS Position (Kept for telemetry feature)
 export interface IssPosition {
   latitude: number;
   longitude: number;

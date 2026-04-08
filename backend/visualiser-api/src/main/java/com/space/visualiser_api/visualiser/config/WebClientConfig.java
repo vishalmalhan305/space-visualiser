@@ -14,4 +14,11 @@ public class WebClientConfig {
                 .baseUrl(baseUrl)
                 .build();
     }
+
+    @Bean
+    public WebClient issWebClient(@Value("${app.iss.base-url:https://api.wheretheiss.at/v1}") String baseUrl) {
+        return WebClient.builder()
+                .baseUrl(baseUrl)
+                .build();
+    }
 }
