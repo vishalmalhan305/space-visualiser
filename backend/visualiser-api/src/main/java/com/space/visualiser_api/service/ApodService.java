@@ -1,10 +1,17 @@
 package com.space.visualiser_api.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.space.visualiser_api.entity.ApodEntry;
 import com.space.visualiser_api.repository.ApodRepository;
+import io.micrometer.core.instrument.Counter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -22,20 +29,28 @@ import org.springframework.data.domain.Sort;
 @Service
 public class ApodService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ApodService.class);
+
     private final ApodRepository apodRepository;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final Duration cacheTtl;
+    private final Counter cacheHitsCounter;
+    private final Counter cacheMissesCounter;
 
     public ApodService(
             ApodRepository apodRepository,
             StringRedisTemplate redisTemplate,
             ObjectMapper objectMapper,
+            @Qualifier("spaceCacheHitsCounter") Counter cacheHitsCounter,
+            @Qualifier("spaceCacheMissesCounter") Counter cacheMissesCounter,
             @Value("${app.apod.cache-ttl:PT24H}") Duration cacheTtl
     ) {
         this.apodRepository = apodRepository;
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
+        this.cacheHitsCounter = cacheHitsCounter;
+        this.cacheMissesCounter = cacheMissesCounter;
         this.cacheTtl = cacheTtl;
     }
 
@@ -71,8 +86,12 @@ public class ApodService {
         String cacheKey = buildCacheKey(date);
         ApodEntry cachedEntry = readFromCache(cacheKey);
         if (cachedEntry != null) {
+            LOGGER.debug("Cache HIT for key {}", cacheKey);
+            cacheHitsCounter.increment();
             return cachedEntry;
         }
+        LOGGER.debug("Cache MISS for key {}", cacheKey);
+        cacheMissesCounter.increment();
 
         ApodEntry apodEntry = apodRepository.findById(date)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -85,7 +104,13 @@ public class ApodService {
     }
 
     private ApodEntry readFromCache(String cacheKey) {
-        String cachedValue = redisTemplate.opsForValue().get(cacheKey);
+        String cachedValue;
+        try {
+            cachedValue = redisTemplate.opsForValue().get(cacheKey);
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Redis read failed for APOD cache key {}", cacheKey, exception);
+            return null;
+        }
         if (cachedValue == null || cachedValue.isBlank()) {
             return null;
         }
@@ -93,7 +118,7 @@ public class ApodService {
         try {
             return objectMapper.readValue(cachedValue, ApodEntry.class);
         } catch (JsonProcessingException exception) {
-            redisTemplate.delete(cacheKey);
+            safeDeleteCacheKey(cacheKey);
             return null;
         }
     }
@@ -103,7 +128,28 @@ public class ApodService {
             String payload = objectMapper.writeValueAsString(apodEntry);
             redisTemplate.opsForValue().set(cacheKey, payload, cacheTtl);
         } catch (JsonProcessingException exception) {
-            throw new IllegalStateException("Failed to serialize APOD entry for cache", exception);
+            LOGGER.warn("Failed to serialize APOD entry for cache key {}", cacheKey, exception);
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Redis write failed for APOD cache key {}", cacheKey, exception);
+        }
+    }
+
+    private void writeArchiveToCache(String cacheKey, List<ApodEntry> entries) {
+        try {
+            String payload = objectMapper.writeValueAsString(entries);
+            redisTemplate.opsForValue().set(cacheKey, payload, cacheTtl);
+        } catch (JsonProcessingException exception) {
+            LOGGER.warn("Failed to serialize APOD archive for cache key {}", cacheKey, exception);
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Redis write failed for APOD cache key {}", cacheKey, exception);
+        }
+    }
+
+    private void safeDeleteCacheKey(String cacheKey) {
+        try {
+            redisTemplate.delete(cacheKey);
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Redis delete failed for APOD cache key {}", cacheKey, exception);
         }
     }
 
