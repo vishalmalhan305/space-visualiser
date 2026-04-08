@@ -9,6 +9,8 @@ export const api = axios.create({
   },
 });
 
+export default api;
+
 // Basic interceptor for logging or error handling in the future
 api.interceptors.response.use(
   (response) => response,

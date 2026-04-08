@@ -16,4 +16,7 @@ export const ENDPOINTS = {
   ISS: {
     POSITION: '/api/iss/position', // Assumed from previous spec
   },
+  MARS: {
+    PHOTOS: (rover: string, camera: string, sol: number) => `/api/mars/photos?rover=${rover}&camera=${camera}&sol=${sol}`,
+  },
 } as const;

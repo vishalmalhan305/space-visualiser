@@ -1,9 +1,11 @@
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Navbar } from './components/layout/Navbar';
 import { ApodHero } from './components/apod/ApodHero';
 import { ApodArchive } from './components/apod/ApodArchive';
 import { AsteroidTracker } from './components/dashboard/AsteroidTracker';
 import { SolarWeatherWidget } from './components/dashboard/SolarWeatherWidget';
 import { IssTracker } from './components/dashboard/IssTracker';
+import { MarsPhotosPage } from './pages/MarsPhotosPage';
 
 function SectionDivider({ label }: { label: string }) {
   return (
@@ -17,49 +19,57 @@ function SectionDivider({ label }: { label: string }) {
   );
 }
 
-function App() {
+function Dashboard() {
   return (
-    <div className="min-h-screen flex flex-col bg-space-dark">
-      <Navbar />
+    <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+      {/* ── APOD Hero ─────────────────────────────────────── */}
+      <section id="apod" aria-label="Astronomy Picture of the Day">
+        <ApodHero />
+      </section>
 
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+      <SectionDivider label="Live Space Intelligence" />
 
-        {/* ── APOD Hero ─────────────────────────────────────── */}
-        <section id="apod" aria-label="Astronomy Picture of the Day">
-          <ApodHero />
-        </section>
+      {/* ── Real-Time Data Grid ───────────────────────────── */}
+      <section id="intel" aria-label="Live space intelligence">
+        {/* Top row: Asteroid tracker (wide) + Solar weather + ISS */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Asteroid fills 2 columns */}
+          <div className="lg:col-span-2" id="asteroids">
+            <AsteroidTracker />
+          </div>
 
-        <SectionDivider label="Live Space Intelligence" />
-
-        {/* ── Real-Time Data Grid ───────────────────────────── */}
-        <section id="intel" aria-label="Live space intelligence">
-          {/* Top row: Asteroid tracker (wide) + Solar weather + ISS */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Asteroid fills 2 columns */}
-            <div className="lg:col-span-2" id="asteroids">
-              <AsteroidTracker />
+          {/* Solar + ISS stacked in third column */}
+          <div className="flex flex-col gap-6">
+            <div id="solar">
+              <SolarWeatherWidget />
             </div>
-
-            {/* Solar + ISS stacked in third column */}
-            <div className="flex flex-col gap-6">
-              <div id="solar">
-                <SolarWeatherWidget />
-              </div>
-              <div id="iss">
-                <IssTracker />
-              </div>
+            <div id="iss">
+              <IssTracker />
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <SectionDivider label="Mission Archive" />
+      <SectionDivider label="Mission Archive" />
 
-        {/* ── APOD Archive ──────────────────────────────────── */}
-        <section id="archive" aria-label="APOD mission archive">
-          <ApodArchive />
-        </section>
+      {/* ── APOD Archive ──────────────────────────────────── */}
+      <section id="archive" aria-label="APOD mission archive">
+        <ApodArchive />
+      </section>
+    </main>
+  );
+}
 
-      </main>
+function App() {
+  return (
+    <Router>
+      <div className="min-h-screen flex flex-col bg-space-dark">
+        <Navbar />
+
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/mars" element={<MarsPhotosPage />} />
+        </Routes>
 
       <footer className="py-8 px-6 border-t border-white/5 bg-space-dark">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3 text-gray-600 text-xs font-mono">
@@ -74,7 +84,8 @@ function App() {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </Router>
   );
 }
 
