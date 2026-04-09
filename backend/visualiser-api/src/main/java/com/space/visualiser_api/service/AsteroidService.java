@@ -3,7 +3,7 @@ package com.space.visualiser_api.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.space.visualiser_api.controller.dto.AsteroidOrbitDto;
+import com.space.visualiser_api.visualiser.dto.AsteroidOrbitDto;
 import com.space.visualiser_api.entity.Asteroid;
 import com.space.visualiser_api.repository.AsteroidRepository;
 import com.space.visualiser_api.visualiser.ingestion.NeoWsIngestionJob;

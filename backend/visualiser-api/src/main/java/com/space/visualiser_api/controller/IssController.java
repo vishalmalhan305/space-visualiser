@@ -1,6 +1,6 @@
 package com.space.visualiser_api.controller;
 
-import com.space.visualiser_api.controller.dto.IssPositionDto;
+import com.space.visualiser_api.visualiser.dto.IssPositionDto;
 import com.space.visualiser_api.service.IssService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;

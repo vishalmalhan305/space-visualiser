@@ -24,6 +24,7 @@ dist/
 *.env
 
 .agent
+.continue
 
 CODEBASE_SUMMARY.md
 DEVELOPMENT_RULES.md

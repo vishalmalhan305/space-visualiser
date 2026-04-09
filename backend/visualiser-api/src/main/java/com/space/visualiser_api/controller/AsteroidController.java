@@ -1,6 +1,6 @@
 package com.space.visualiser_api.controller;
 
-import com.space.visualiser_api.controller.dto.AsteroidOrbitDto;
+import com.space.visualiser_api.visualiser.dto.AsteroidOrbitDto;
 import com.space.visualiser_api.entity.Asteroid;
 import com.space.visualiser_api.service.AsteroidService;
 import org.springframework.format.annotation.DateTimeFormat;

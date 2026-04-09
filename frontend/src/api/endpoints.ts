@@ -16,7 +16,7 @@ export const ENDPOINTS = {
     PAGE: '/api/weather/page',
   },
   ISS: {
-    POSITION: '/api/iss/position', // Assumed from previous spec
+    POSITION: '/api/iss/position', 
   },
   MARS: {
     PHOTOS: (rover: string, camera: string, sol: number) => `/api/mars/photos?rover=${rover}&camera=${camera}&sol=${sol}`,

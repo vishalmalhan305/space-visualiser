@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableScheduling
 public class VisualiserApiApplication {
-
+//to do Circuit Breaker
 	public static void main(String[] args) {
 		SpringApplication.run(VisualiserApiApplication.class, args);
 	}

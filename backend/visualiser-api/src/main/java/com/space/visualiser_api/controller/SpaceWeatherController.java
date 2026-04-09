@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.space.visualiser_api.controller.dto.MonthlyWeatherStatsDto;
+import com.space.visualiser_api.visualiser.dto.MonthlyWeatherStatsDto;
 import com.space.visualiser_api.entity.SpaceWeatherEvent;
 import com.space.visualiser_api.entity.SpaceWeatherEventType;
 import com.space.visualiser_api.service.SpaceWeatherService;

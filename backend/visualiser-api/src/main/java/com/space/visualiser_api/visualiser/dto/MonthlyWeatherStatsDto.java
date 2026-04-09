@@ -1,4 +1,4 @@
-package com.space.visualiser_api.controller.dto;
+package com.space.visualiser_api.visualiser.dto;
 
 public record MonthlyWeatherStatsDto(
         int year,

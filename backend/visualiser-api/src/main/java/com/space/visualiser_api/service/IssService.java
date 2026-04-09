@@ -2,7 +2,7 @@ package com.space.visualiser_api.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.space.visualiser_api.controller.dto.IssPositionDto;
+import com.space.visualiser_api.visualiser.dto.IssPositionDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,27 +35,34 @@ public class IssService {
     }
 
     public IssPositionDto getCurrentPosition() {
+        // 1. Always try to get fresh data first
+        IssPositionDto freshPosition = fetchFromExternal();
+
+        if (freshPosition != null) {
+            writeToCache(freshPosition);
+            return freshPosition;
+        }
+
+        // 2. If fresh fetch failed, attempt to return STALE data from cache
+        LOGGER.info("Fresh fetch failed. Attempting to retrieve stale position from cache...");
         String cached = readFromCache();
         if (cached != null) {
             try {
                 return objectMapper.readValue(cached, IssPositionDto.class);
             } catch (JsonProcessingException e) {
-                redisTemplate.delete(CACHE_KEY);
+                LOGGER.error("Failed to parse stale cache data");
             }
         }
 
-        IssPositionDto position = fetchFromExternal();
-        if (position != null) {
-            writeToCache(position);
-        }
-        return position;
+        // 3. Absolute fallback if even the cache is empty
+        return null;
     }
 
     private String readFromCache() {
         try {
             return redisTemplate.opsForValue().get(CACHE_KEY);
         } catch (Exception e) {
-            LOGGER.warn("Redis read failed for ISS position", e);
+            LOGGER.warn("Redis read failed: falling back to live fetch", e);
             return null;
         }
     }
@@ -65,22 +72,27 @@ public class IssService {
             String payload = objectMapper.writeValueAsString(position);
             redisTemplate.opsForValue().set(CACHE_KEY, payload, CACHE_TTL);
         } catch (Exception e) {
-            LOGGER.warn("Redis write failed for ISS position", e);
+            LOGGER.warn("Failed to update Redis cache", e);
         }
     }
 
     private IssPositionDto fetchFromExternal() {
         try {
             return issWebClient.get()
-                    .uri("/satellites/25544")
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/satellites/25544")
+                            .queryParam("units", "kilometers")
+                            .build())
                     .retrieve()
                     .bodyToMono(IssPositionDto.class)
-                    .timeout(Duration.ofSeconds(5))
+                    // Increase timeout since Postman confirmed the API is slow (8s+)
+                    .timeout(Duration.ofSeconds(15))
+                    .onErrorResume(e -> {
+                        LOGGER.error("ISS API slow or down: {}", e.getMessage());
+                        return Mono.empty();
+                    })
                     .block();
         } catch (Exception e) {
-            LOGGER.error("Failed to fetch ISS position from external API", e);
-            // Fallback to a safe "telemetry lost" state if needed, but for now we return null
-            // and let the controller handle it.
             return null;
         }
     }

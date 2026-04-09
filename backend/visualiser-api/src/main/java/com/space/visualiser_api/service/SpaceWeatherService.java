@@ -12,7 +12,7 @@ import java.util.Map;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.space.visualiser_api.controller.dto.MonthlyWeatherStatsDto;
+import com.space.visualiser_api.visualiser.dto.MonthlyWeatherStatsDto;
 import com.space.visualiser_api.entity.SpaceWeatherEvent;
 import com.space.visualiser_api.repository.SpaceWeatherEventRepository;
 import com.space.visualiser_api.entity.SpaceWeatherEventType;
