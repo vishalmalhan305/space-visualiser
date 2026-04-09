@@ -1,17 +1,34 @@
 import { Rocket, Menu, X } from 'lucide-react';
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { StatusBar } from '../dashboard/StatusBar';
 
 const navLinks = [
-  { label: 'Dashboard', href: '/',          active: true  },
-  { label: 'Asteroids',  href: '/#asteroids', active: false },
-  { label: 'Mars',       href: '/mars',      active: false },
-  { label: 'Solar',      href: '/#solar',     active: false },
-  { label: 'ISS',        href: '/#iss',       active: false },
+  { label: 'Dashboard', href: '/' },
+  { label: 'Asteroids', href: '/#asteroids' },
+  { label: 'Mars',      href: '/mars' },
+  { label: 'Solar',     href: '/#solar' },
+  { label: 'ISS',       href: '/#iss' },
 ];
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
+
+  const isActive = (href: string) => {
+    const [path, hash] = href.split('#');
+    const safeHash = hash ? `#${hash}` : '';
+    
+    if (path === '/' && !safeHash) {
+      return location.pathname === '/' && !location.hash;
+    }
+    
+    if (safeHash) {
+      return location.pathname === path && location.hash === safeHash;
+    }
+    
+    return location.pathname === path;
+  };
 
   return (
     <header className="glass-header sticky top-0 z-50 w-full">
@@ -32,7 +49,7 @@ export function Navbar() {
               key={l.label}
               href={l.href}
               className={`px-4 py-2 text-sm font-mono transition-colors rounded-md ${
-                l.active
+                isActive(l.href)
                   ? 'text-electric-blue border-b-2 border-electric-blue pb-1 text-glow'
                   : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
               }`}
@@ -70,7 +87,7 @@ export function Navbar() {
               key={l.label}
               href={l.href}
               className={`block px-4 py-3 rounded-lg text-sm font-mono transition-colors ${
-                l.active
+                isActive(l.href)
                   ? 'text-electric-blue bg-electric-blue/10'
                   : 'text-gray-400 hover:text-white hover:bg-white/5'
               }`}

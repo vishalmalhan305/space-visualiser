@@ -25,17 +25,32 @@ export const ApodHero: React.FC = () => {
     );
   }
 
+  const isVideoFile = data.mediaType === 'video' && 
+    ["mp4", "webm", "ogg"].some(ext => data.url.toLowerCase().endsWith(ext));
+
   return (
     <section className="relative w-full h-[600px] md:h-[70vh] max-h-[800px] bg-space-dark overflow-hidden rounded-2xl border border-white/10 my-6 shadow-[0_0_40px_rgba(0,240,255,0.1)] group">
       {/* Media Background */}
       {data.mediaType === 'video' ? (
-        <iframe
-          src={data.url}
-          title={data.title}
-          className="absolute inset-0 w-full h-full object-cover opacity-80"
-          allowFullScreen
-          frameBorder="0"
-        />
+        isVideoFile ? (
+          <video
+            src={data.url}
+            className="absolute inset-0 w-full h-full object-cover opacity-80"
+            controls
+            autoPlay
+            muted
+            loop
+            playsInline
+          />
+        ) : (
+          <iframe
+            src={data.url}
+            title={data.title}
+            className="absolute inset-0 w-full h-full object-cover opacity-80"
+            allowFullScreen
+            frameBorder="0"
+          />
+        )
       ) : (
         <img
           src={data.hdurl || data.url}
@@ -56,11 +71,11 @@ export const ApodHero: React.FC = () => {
             </span>
             <span className="uppercase tracking-widest text-xs">Astronomy Picture of the Day</span>
           </div>
-          
+
           <h1 className="text-4xl md:text-5xl lg:text-7xl font-display font-bold text-white mb-4 leading-tight drop-shadow-xl">
             {data.title}
           </h1>
-          
+
           <button 
             onClick={() => setShowInfo(!showInfo)}
             className="md:hidden flex items-center gap-2 text-gray-300 hover:text-white transition-colors bg-white/10 px-4 py-2 rounded-full backdrop-blur-md"

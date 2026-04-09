@@ -1,6 +1,7 @@
 import { useAsteroidsWeek } from '../../hooks/useAsteroids';
 import { useRecentWeather } from '../../hooks/useWeather';
 import { AlertTriangle, Sun, Satellite, Zap, Activity } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import type { SpaceWeatherEvent } from '../../types/dashboard';
 
 const solarColors = {
@@ -25,8 +26,37 @@ function Badge({
   loading: boolean;
   href?: string;
 }) {
-  const inner = (
-    <div className="flex items-center gap-2 bg-space-navy/80 border border-white/10 px-3 py-1.5 rounded-full text-xs font-mono cursor-pointer hover:border-electric-blue/50 transition-all group">
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (!href) return;
+    
+    const [path, hash] = href.split('#');
+    
+    // If we're on a different page, navigate first
+    if (path !== location.pathname && path !== '') {
+      navigate(href);
+      return;
+    }
+
+    // If we're on the same page (or current is dashboard and path is /), smooth scroll to hash
+    if (hash) {
+      e.preventDefault();
+      const element = document.getElementById(hash);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+        // Update hash in URL without reload
+        window.history.pushState(null, '', `#${hash}`);
+      }
+    }
+  };
+
+  return (
+    <div 
+      onClick={handleClick}
+      className="flex items-center gap-2 bg-space-navy/80 border border-white/10 px-3 py-1.5 rounded-full text-xs font-mono cursor-pointer hover:border-electric-blue/50 transition-all group"
+    >
       <span className="text-gray-400 group-hover:text-electric-blue transition-colors">{icon}</span>
       <span className="text-gray-500 hidden sm:inline">{label}:</span>
       {loading ? (
@@ -36,7 +66,6 @@ function Badge({
       )}
     </div>
   );
-  return href ? <a href={href}>{inner}</a> : inner;
 }
 
 function getStatusFromEvents(events: SpaceWeatherEvent[] = []) {
@@ -78,6 +107,7 @@ export function StatusBar() {
         value="NOMINAL"
         accent="text-green-400"
         loading={false}
+        href="/#apod"
       />
 
       {/* Asteroid count */}

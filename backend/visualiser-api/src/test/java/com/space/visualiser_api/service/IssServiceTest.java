@@ -68,7 +68,12 @@ class IssServiceTest {
     void getCurrentPosition_CacheMiss_FetchesFromApi() throws JsonProcessingException {
         // Arrange
         String cacheKey = "iss:position";
-        IssPositionDto apiResponse = new IssPositionDto(10.0, 20.0, 400.0, 28000.0, 1600000000L);
+        IssPositionDto apiResponse = new IssPositionDto();
+        apiResponse.setLatitude(10.0);
+        apiResponse.setLongitude(20.0);
+        apiResponse.setAltitude_km(400.0);
+        apiResponse.setVelocity_km_h(28000.0);
+        apiResponse.setTimestamp(1600000000L);
 
         when(valueOperations.get(cacheKey)).thenReturn(null);
         

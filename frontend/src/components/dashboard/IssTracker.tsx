@@ -59,24 +59,24 @@ export function IssTracker() {
             <Navigation className="text-electric-blue w-6 h-6 mr-3" />
             <div className="font-mono text-sm">
               <span className="text-gray-400">LAT </span>
-              <span className="text-white font-semibold">{data.latitude.toFixed(2)}°</span>
+              <span className="text-white font-semibold">{(data.latitude ?? 0).toFixed(2)}°</span>
               <span className="text-gray-600 mx-3">|</span>
               <span className="text-gray-400">LON </span>
-              <span className="text-white font-semibold">{data.longitude.toFixed(2)}°</span>
+              <span className="text-white font-semibold">{(data.longitude ?? 0).toFixed(2)}°</span>
             </div>
           </div>
 
           {/* Stats grid */ }
           <div className="p-5 grid grid-cols-2 gap-3">
-            <Stat label="Altitude" value={data.altitude_km.toFixed(1)} unit="km" />
-            <Stat label="Velocity" value={(data.velocity_km_h / 1000).toFixed(1)} unit="k km/h" />
+            <Stat label="Altitude" value={(data.altitude_km ?? 0).toFixed(1)} unit="km" />
+            <Stat label="Velocity" value={((data.velocity_km_h ?? 0) / 1000).toFixed(1)} unit="k km/h" />
             <Stat
               label="Latitude"
-              value={`${Math.abs(data.latitude).toFixed(2)}° ${data.latitude >= 0 ? 'N' : 'S'}`}
+              value={`${Math.abs(data.latitude ?? 0).toFixed(2)}° ${(data.latitude ?? 0) >= 0 ? 'N' : 'S'}`}
             />
             <Stat
               label="Longitude"
-              value={`${Math.abs(data.longitude).toFixed(2)}° ${data.longitude >= 0 ? 'E' : 'W'}`}
+              value={`${Math.abs(data.longitude ?? 0).toFixed(2)}° ${(data.longitude ?? 0) >= 0 ? 'E' : 'W'}`}
             />
           </div>
         </>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAsteroidsWeek } from '../../hooks/useAsteroids';
 import { useAsteroidsPaginated } from '../../hooks/useAsteroidsPaginated';
 import { AlertTriangle, Radar, ChevronDown, ChevronUp, Filter, ArrowLeft, ArrowRight } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 function RowSkeleton() {
   return (
@@ -17,6 +18,8 @@ export function AsteroidTracker() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [page, setPage] = useState(0);
   const [hazardousOnly, setHazardousOnly] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const { data: summary, isLoading: isSummaryLoading } = useAsteroidsWeek();
   const { data: paginated, isLoading: isPaginatedLoading } = useAsteroidsPaginated(
@@ -27,6 +30,25 @@ export function AsteroidTracker() {
 
   const elementCount = summary?.length ?? 0;
   const hazardousCount = summary?.filter(a => a.potentiallyHazardous).length ?? 0;
+
+  const handleRadarUplink = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const href = '/#asteroids';
+    const [path, hash] = href.split('#');
+
+    if (path !== location.pathname && path !== '') {
+      navigate(href);
+      return;
+    }
+
+    if (hash) {
+      const element = document.getElementById(hash);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+        window.history.pushState(null, '', `#${hash}`);
+      }
+    }
+  };
 
   return (
     <div className="glass-panel rounded-xl overflow-hidden flex flex-col transition-all duration-500">
@@ -190,12 +212,12 @@ export function AsteroidTracker() {
         >
           {isExpanded ? 'Collapse Terminal' : 'Intelligence Ledger'}
         </button>
-        <a
-          href="/#asteroids"
+        <button
+          onClick={handleRadarUplink}
           className="flex items-center gap-2 text-[10px] font-mono font-bold text-electric-blue hover:text-glow transition-all uppercase tracking-widest"
         >
           Radar Uplink <ArrowRight className="w-3 h-3" />
-        </a>
+        </button>
       </div>
     </div>
   );
