@@ -1,0 +1,81 @@
+services:
+  # PostgreSQL 16 - Primary database
+  postgres:
+    image: postgres:16-alpine
+    container_name: space-visualiser-postgres
+    environment:
+      POSTGRES_DB: spacedb
+      POSTGRES_USER: space
+      POSTGRES_PASSWORD: space123
+    ports:
+      - "5433:5432" # Map to 5433 on host to avoid conflicts
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U space -d spacedb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - space-network
+
+  # Redis 7 - Caching layer
+  redis:
+    image: redis:7-alpine
+    container_name: space-visualiser-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - space-network
+
+  # Spring Boot Backend (optional - uncomment when ready)
+  # backend:
+  #   build:
+  #     context: ./backend/visualiser-api
+  #     dockerfile: Dockerfile
+  #   container_name: space-visualiser-backend
+  #   environment:
+  #     # Database configuration
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/spacedb
+  #     SPRING_DATASOURCE_USERNAME: space
+  #     SPRING_DATASOURCE_PASSWORD: space123
+  #     
+  #     # Redis configuration
+  #     SPRING_DATA_REDIS_HOST: redis
+  #     SPRING_DATA_REDIS_PORT: 6379
+  #     
+  #     # NASA API key (replace with your actual key)
+  #     NASA_API_KEY: ${NASA_API_KEY:-DEMO_KEY}
+  #     
+  #     # Optional: Anthropic API key for AI features
+  #     ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  #     
+  #     # JVM options
+  #     JAVA_OPTS: -Xmx512m -Xms256m
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   networks:
+  #     - space-network
+  #   restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  space-network:
+    driver: bridge

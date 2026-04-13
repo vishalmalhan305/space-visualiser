@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+@theme {
+  --color-electric-blue: #00f0ff;
+  --color-space-navy: #0a0e17;
+  --color-space-dark: #05070a;
+  
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'Orbitron', 'Inter', sans-serif;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-space-dark);
+    color: #e2e8f0;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+}
+
+/* Glassmorphism utilities for our components */
+@layer utilities {
+  .glass-panel {
+    @apply bg-space-navy/60 backdrop-blur-md border border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.5)];
+  }
+  
+  .glass-header {
+    @apply bg-space-dark/80 backdrop-blur-lg border-b border-white/5;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+  }
+}
+
+/* Skeleton loader animation */
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+  50% {
+    opacity: 0.7;
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Scanning line effect for the control room atmosphere */
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: rgba(0, 240, 255, 0.03);
+  z-index: 9999;
+  pointer-events: none;
+  animation: scanline 8s linear infinite;
+}
+
+@keyframes scanline {
+  0% { top: -10%; }
+  100% { top: 110%; }
+}
+
+.text-glow:hover {
+  animation: flicker 0.15s infinite;
+}
+
+@keyframes flicker {
+  0% { opacity: 1; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.9; }
+}
