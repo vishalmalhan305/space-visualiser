@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -101,7 +102,7 @@ class MarsServiceTest {
         List<MarsPhoto> dbPhotos = List.of(new MarsPhoto());
 
         when(valueOperations.get(cacheKey)).thenReturn(null);
-        when(marsPhotoRepository.findByRoverAndCameraAndSol("curiosity", "fhaz", 1000)).thenReturn(dbPhotos);
+        when(marsPhotoRepository.findByRoverIgnoreCaseAndCameraIgnoreCaseAndSol("curiosity", "fhaz", 1000)).thenReturn(dbPhotos);
         when(objectMapper.writeValueAsString(dbPhotos)).thenReturn("[]");
 
         // Act
@@ -123,7 +124,9 @@ class MarsServiceTest {
         String cacheKey = "mars:photos:curiosity:fhaz:sol:1000";
 
         when(valueOperations.get(cacheKey)).thenReturn(null);
-        when(marsPhotoRepository.findByRoverAndCameraAndSol(anyString(), anyString(), anyInt())).thenReturn(Collections.emptyList());
+        when(marsPhotoRepository.findByRoverIgnoreCaseAndCameraIgnoreCaseAndSol(anyString(), anyString(), anyInt()))
+                .thenReturn(Collections.emptyList());
+        when(marsPhotoRepository.findByRoverIgnoreCaseAndSol(anyString(), anyInt())).thenReturn(Collections.emptyList());
 
         // Mock WebClient chain
         when(nasaWebClient.get()).thenReturn(requestHeadersUriSpec);
@@ -152,5 +155,32 @@ class MarsServiceTest {
         assertEquals(999L, result.get(0).getPhotoId());
         verify(marsPhotoRepository).saveAll(any());
         verify(valueOperations).set(eq(cacheKey), anyString(), any(Duration.class));
+    }
+
+    @Test
+    void getPhotos_CacheMiss_DbMiss_NasaFailure_ReturnsEmptyListInsteadOfThrowing() {
+        // Arrange
+        String rover = "curiosity";
+        String camera = "FHAZ";
+        Integer sol = 1000;
+        String cacheKey = "mars:photos:curiosity:fhaz:sol:1000";
+
+        when(valueOperations.get(cacheKey)).thenReturn(null);
+        when(marsPhotoRepository.findByRoverIgnoreCaseAndCameraIgnoreCaseAndSol(anyString(), anyString(), anyInt()))
+                .thenReturn(Collections.emptyList());
+        when(marsPhotoRepository.findByRoverIgnoreCaseAndSol(anyString(), anyInt())).thenReturn(Collections.emptyList());
+
+        // Mock WebClient chain with downstream outage
+        when(nasaWebClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri(any(Function.class))).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(NasaMarsPhotoResponseDto.class))
+                .thenReturn(Mono.error(WebClientResponseException.create(503, "Service Unavailable", null, null, null)));
+        when(objectMapper.writeValueAsString(Collections.emptyList())).thenReturn("[]");
+
+        // Act + Assert
+        List<MarsPhoto> result = assertDoesNotThrow(() -> marsService.getPhotos(rover, camera, sol));
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
     }
 }

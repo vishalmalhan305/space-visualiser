@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import type { MarsFilters as MarsFiltersType } from '../types/mars';
 import { useMarsPhotos } from '../hooks/useMarsPhotos';
 import { MarsFilters } from '../components/mars/MarsFilters';
@@ -15,7 +16,12 @@ export const MarsPhotosPage: React.FC = () => {
   const { data: photos, isLoading, isError } = useMarsPhotos(filters);
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.55, ease: [0.215, 0.61, 0.355, 1] }}
+      className="container mx-auto px-4 py-8"
+    >
       
       <div className="mb-10">
         <h1 className="text-4xl md:text-5xl font-display font-bold text-white mb-4 flex items-center gap-4">
@@ -41,6 +47,6 @@ export const MarsPhotosPage: React.FC = () => {
         <MarsMasonryGrid photos={photos} isLoading={isLoading} />
       )}
 
-    </div>
+    </motion.div>
   );
 };

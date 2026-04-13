@@ -12,7 +12,6 @@ import com.space.visualiser_api.service.SpaceWeatherService;
 import org.springframework.data.domain.Page;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Refill;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -73,10 +72,10 @@ public class SpaceWeatherController {
     }
 
     private Bucket createBucket() {
-        Bandwidth limit = Bandwidth.classic(
-                REQUESTS_PER_MINUTE,
-                Refill.intervally(REQUESTS_PER_MINUTE, Duration.ofMinutes(1))
-        );
+        Bandwidth limit = Bandwidth.builder()
+                .capacity(REQUESTS_PER_MINUTE)
+                .refillGreedy(REQUESTS_PER_MINUTE, Duration.ofMinutes(1))
+                .build();
         return Bucket.builder().addLimit(limit).build();
     }
 

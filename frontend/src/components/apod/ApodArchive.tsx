@@ -1,6 +1,25 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { useApodArchive } from '../../hooks/useApod';
 import { ChevronLeft, ChevronRight, Play } from 'lucide-react';
+
+const archiveVariants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.55,
+      ease: [0.215, 0.61, 0.355, 1],
+      staggerChildren: 0.06,
+    },
+  },
+};
+
+const archiveCardVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.215, 0.61, 0.355, 1] } },
+};
 
 export const ApodArchive: React.FC = () => {
   const { data: entries, isLoading, isError } = useApodArchive(30);
@@ -21,25 +40,35 @@ export const ApodArchive: React.FC = () => {
   }
 
   return (
-    <section className="py-12">
+    <motion.section
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.2 }}
+      variants={archiveVariants}
+      className="py-12"
+    >
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="font-display text-3xl text-white tracking-tight mb-2">Mission History</h2>
           <p className="text-gray-400 font-sans">Browse previous astronomical captures from our deep space monitors.</p>
         </div>
         <div className="flex gap-2">
-          <button className="p-2 glass-panel rounded-full text-gray-400 hover:text-electric-blue transition-colors">
+          <motion.button whileHover={{ scale: 1.03 }} className="p-2 glass-panel rounded-full text-gray-400 hover:text-electric-blue transition-colors">
             <ChevronLeft className="w-6 h-6" />
-          </button>
-          <button className="p-2 glass-panel rounded-full text-gray-400 hover:text-electric-blue transition-colors">
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.03 }} className="p-2 glass-panel rounded-full text-gray-400 hover:text-electric-blue transition-colors">
             <ChevronRight className="w-6 h-6" />
-          </button>
+          </motion.button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <motion.div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {entries.map((entry) => (
-          <div key={entry.date} className="group relative glass-panel rounded-xl overflow-hidden cursor-pointer hover:border-electric-blue/50 transition-all duration-300">
+          <motion.div
+            key={entry.date}
+            variants={archiveCardVariants}
+            className="group relative glass-panel rounded-xl overflow-hidden cursor-pointer hover:border-electric-blue/50 transition-all duration-300"
+          >
             <div className="h-48 overflow-hidden relative">
               <img 
                 src={entry.url} 
@@ -65,9 +94,9 @@ export const ApodArchive: React.FC = () => {
                 {entry.explanation}
               </p>
             </div>
-          </div>
+          </motion.div>
         ))}
-      </div>
-    </section>
+      </motion.div>
+    </motion.section>
   );
 };

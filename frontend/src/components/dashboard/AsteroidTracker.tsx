@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useAsteroidsWeek } from '../../hooks/useAsteroids';
 import { useAsteroidsPaginated } from '../../hooks/useAsteroidsPaginated';
 import { AlertTriangle, Radar, ChevronDown, ChevronUp, Filter, ArrowLeft, ArrowRight } from 'lucide-react';
@@ -51,7 +52,7 @@ export function AsteroidTracker() {
   };
 
   return (
-    <div className="glass-panel rounded-xl overflow-hidden flex flex-col transition-all duration-500">
+    <motion.div layout className="glass-panel rounded-xl overflow-hidden flex flex-col transition-all duration-500">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
         <div className="flex items-center gap-3">
@@ -77,63 +78,74 @@ export function AsteroidTracker() {
               )}
             </div>
           )}
-          <button 
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => setIsExpanded(!isExpanded)}
             className="p-1 hover:bg-white/5 rounded transition-colors text-gray-500 hover:text-white"
           >
             {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-          </button>
+          </motion.button>
         </div>
       </div>
 
       {/* Expanded Content: Filters & Pagination */}
-      {isExpanded && (
-        <div className="bg-white/[0.02] border-b border-white/5 px-5 py-3 flex flex-wrap items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => {
-                setHazardousOnly(!hazardousOnly);
-                setPage(0);
-              }}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-mono border transition-all ${
-                hazardousOnly 
-                  ? 'bg-red-500/20 border-red-500/40 text-red-400' 
-                  : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
-              }`}
-            >
-              <Filter className="w-3 h-3" />
-              {hazardousOnly ? 'HAZARDOUS ONLY' : 'ALL OBJECTS'}
-            </button>
-            
-            {paginated && (
-                <span className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">
-                  {paginated.totalElements} Total Matches
-                </span>
-            )}
-          </div>
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            layout
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.35, ease: [0.215, 0.61, 0.355, 1] }}
+            className="overflow-hidden bg-white/[0.02] border-b border-white/5 px-5 py-3 flex flex-wrap items-center justify-between gap-4"
+          >
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => {
+                  setHazardousOnly(!hazardousOnly);
+                  setPage(0);
+                }}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-mono border transition-all ${
+                  hazardousOnly 
+                    ? 'bg-red-500/20 border-red-500/40 text-red-400' 
+                    : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
+                }`}
+              >
+                <Filter className="w-3 h-3" />
+                {hazardousOnly ? 'HAZARDOUS ONLY' : 'ALL OBJECTS'}
+              </button>
+              
+              {paginated && (
+                  <span className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">
+                    {paginated.totalElements} Total Matches
+                  </span>
+              )}
+            </div>
 
-          {/* Pagination Controls */}
-          <div className="flex items-center gap-3">
-            <button
-              disabled={page === 0 || isPaginatedLoading}
-              onClick={() => setPage(p => p - 1)}
-              className="p-1.5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent rounded transition-colors text-electric-blue"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <span className="text-xs font-mono text-gray-400">
-              PAGE {page + 1} / {paginated?.totalPages || 1}
-            </span>
-            <button
-              disabled={(paginated && page >= paginated.totalPages - 1) || isPaginatedLoading}
-              onClick={() => setPage(p => p + 1)}
-              className="p-1.5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent rounded transition-colors text-electric-blue"
-            >
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
+            {/* Pagination Controls */}
+            <div className="flex items-center gap-3">
+              <button
+                disabled={page === 0 || isPaginatedLoading}
+                onClick={() => setPage(p => p - 1)}
+                className="p-1.5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent rounded transition-colors text-electric-blue"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <span className="text-xs font-mono text-gray-400">
+                PAGE {page + 1} / {paginated?.totalPages || 1}
+              </span>
+              <button
+                disabled={(paginated && page >= paginated.totalPages - 1) || isPaginatedLoading}
+                onClick={() => setPage(p => p + 1)}
+                className="p-1.5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent rounded transition-colors text-electric-blue"
+              >
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Table Data */}
       <div className={`overflow-x-auto flex-1 transition-all duration-500 ${isExpanded ? 'max-h-[600px]' : 'max-h-[250px]'}`}>
@@ -219,6 +231,6 @@ export function AsteroidTracker() {
           Radar Uplink <ArrowRight className="w-3 h-3" />
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 }

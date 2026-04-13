@@ -1,5 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Navbar } from './components/layout/Navbar';
+import { Reveal } from './components/layout/Reveal';
 import { ApodHero } from './components/apod/ApodHero';
 import { ApodArchive } from './components/apod/ApodArchive';
 import { AsteroidTracker } from './components/dashboard/AsteroidTracker';
@@ -9,13 +11,19 @@ import { MarsPhotosPage } from './pages/MarsPhotosPage';
 
 function SectionDivider({ label }: { label: string }) {
   return (
-    <div className="flex items-center gap-4 my-8">
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.5, ease: [0.215, 0.61, 0.355, 1] }}
+      className="flex items-center gap-4 my-8"
+    >
       <div className="flex-1 h-px bg-white/5" />
       <span className="text-[10px] uppercase tracking-[0.25em] text-gray-600 font-mono whitespace-nowrap">
         {label}
       </span>
       <div className="flex-1 h-px bg-white/5" />
-    </div>
+    </motion.div>
   );
 }
 
@@ -67,8 +75,8 @@ function App() {
         <Navbar />
 
         <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/mars" element={<MarsPhotosPage />} />
+          <Route path="/" element={<Reveal><Dashboard /></Reveal>} />
+          <Route path="/mars" element={<Reveal><MarsPhotosPage /></Reveal>} />
         </Routes>
 
       <footer className="py-8 px-6 border-t border-white/5 bg-space-dark">
