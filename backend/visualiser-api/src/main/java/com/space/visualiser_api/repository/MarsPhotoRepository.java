@@ -14,7 +14,7 @@ public interface MarsPhotoRepository extends JpaRepository<MarsPhoto, Long> {
      * Fetches photos based on specific rover, camera, and sol parameters.
      * This query must be optimized with the composite index (rover, camera, sol).
      */
-    List<MarsPhoto> findByRoverAndCameraAndSol(String rover, String camera, Integer sol);
+    List<MarsPhoto> findByRoverIgnoreCaseAndCameraIgnoreCaseAndSol(String rover, String camera, Integer sol);
 
-    List<MarsPhoto> findByRoverAndSol(String rover, Integer sol);
+    List<MarsPhoto> findByRoverIgnoreCaseAndSol(String rover, Integer sol);
 }

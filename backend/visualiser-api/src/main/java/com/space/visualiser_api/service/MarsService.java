@@ -12,11 +12,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -62,7 +60,7 @@ public class MarsService {
     }
 
     public List<MarsPhoto> getPhotos(String rover, String camera, Integer sol) {
-        String safeRover = rover == null ? "" : rover.trim().toLowerCase(Locale.ROOT);
+        String safeRover = rover == null ? "" : rover.trim();
         String safeCamera = normalizeCamera(camera);
 
         String cacheKey = buildCacheKey(safeRover, safeCamera, sol);
@@ -78,8 +76,21 @@ public class MarsService {
         cacheMissesCounter.increment();
 
         List<MarsPhoto> dbPhotos = safeCamera == null
-                ? marsPhotoRepository.findByRoverAndSol(safeRover, sol)
-                : marsPhotoRepository.findByRoverAndCameraAndSol(safeRover, safeCamera, sol);
+                ? marsPhotoRepository.findByRoverIgnoreCaseAndSol(safeRover, sol)
+                : marsPhotoRepository.findByRoverIgnoreCaseAndCameraIgnoreCaseAndSol(safeRover, safeCamera, sol);
+
+        // If camera-specific filter has no match in DB, fall back to same rover+sol so users still
+        // get historical data during upstream outages or sparse camera coverage.
+        if (dbPhotos.isEmpty() && safeCamera != null) {
+            List<MarsPhoto> roverSolPhotos = marsPhotoRepository.findByRoverIgnoreCaseAndSol(safeRover, sol);
+            if (!roverSolPhotos.isEmpty()) {
+                LOGGER.info(
+                        "No camera-specific DB rows for rover {}, camera {}, sol {}. Falling back to rover+sol dataset.",
+                        safeRover, safeCamera, sol
+                );
+                dbPhotos = roverSolPhotos;
+            }
+        }
 
         if (dbPhotos.isEmpty()) {
             LOGGER.info("Mars photos missing in DB for rover {}, camera {}, sol {}. Fetching from NASA", safeRover, safeCamera, sol);
@@ -138,18 +149,10 @@ public class MarsService {
 
         } catch (WebClientResponseException exception) {
             LOGGER.error("Failed to fetch Mars photos from NASA. Status: {}", exception.getStatusCode(), exception);
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_GATEWAY,
-                    "Failed to fetch data from NASA Mars Photos API",
-                    exception
-            );
+            return Collections.emptyList();
         } catch (Exception exception) {
             LOGGER.error("Error during NASA Mars Photos API call", exception);
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Unexpected error communicating with external API",
-                    exception
-            );
+            return Collections.emptyList();
         }
     }
 
@@ -195,18 +198,19 @@ public class MarsService {
 
     private String buildCacheKey(String rover, String camera, Integer sol) {
         String cameraKey = camera == null ? "all" : camera;
-        return "mars:photos:" + rover + ":" + cameraKey + ":sol:" + sol;
+        String roverKey = rover == null ? "" : rover.trim().toLowerCase(Locale.ROOT);
+        return "mars:photos:" + roverKey + ":" + cameraKey + ":sol:" + sol;
     }
 
     private String normalizeCamera(String camera) {
         if (camera == null) {
             return null;
         }
-        String normalized = camera.trim().toLowerCase(Locale.ROOT);
+        String normalized = camera.trim();
         if (normalized.isEmpty() || Objects.equals(normalized, "all")) {
             return null;
         }
-        return normalized;
+        return normalized.toLowerCase(Locale.ROOT);
     }
 
     private String resolveCamera(String requestedCamera, String cameraFromNasa) {
