@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import { useAsteroidsWeek } from '../../hooks/useAsteroids';
 import { useRecentWeather } from '../../hooks/useWeather';
 import { AlertTriangle, Sun, Satellite, Zap, Activity } from 'lucide-react';
@@ -46,25 +47,33 @@ function Badge({
       const element = document.getElementById(hash);
       if (element) {
         element.scrollIntoView({ behavior: 'smooth' });
-        // Update hash in URL without reload
-        window.history.pushState(null, '', `#${hash}`);
       }
+      navigate(`${location.pathname}#${hash}`);
     }
   };
 
   return (
-    <div 
+    <motion.div 
       onClick={handleClick}
-      className="flex items-center gap-2 bg-space-navy/80 border border-white/10 px-3 py-1.5 rounded-full text-xs font-mono cursor-pointer hover:border-electric-blue/50 transition-all group"
+      whileHover={{ y: -1 }}
+      whileTap={{ scale: 0.99 }}
+      transition={{ duration: 0.18, ease: [0.215, 0.61, 0.355, 1] }}
+      className="shrink-0 flex items-center gap-2 bg-space-navy/70 border border-white/10 px-3 py-1.5 rounded-full text-xs font-mono cursor-pointer hover:border-electric-blue/45 transition-all group whitespace-nowrap"
     >
-      <span className="text-gray-400 group-hover:text-electric-blue transition-colors">{icon}</span>
-      <span className="text-gray-500 hidden sm:inline">{label}:</span>
+      <motion.span
+        animate={{ opacity: [0.8, 1, 0.8] }}
+        transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
+        className="text-gray-400 group-hover:text-electric-blue transition-colors"
+      >
+        {icon}
+      </motion.span>
+      <span className="text-gray-400 hidden sm:inline">{label}:</span>
       {loading ? (
         <span className="w-10 h-3 bg-white/10 rounded animate-pulse-subtle inline-block" />
       ) : (
         <span className={accent ?? 'text-white'}>{value}</span>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -99,7 +108,7 @@ export function StatusBar() {
   const { status: solarStatus, peak: peakFlare } = getStatusFromEvents(weather);
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex items-center gap-2 min-w-max">
       {/* System heartbeat */}
       <Badge
         icon={<Activity className="w-3.5 h-3.5" />}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useApodToday } from '../../hooks/useApod';
 import { ApodSkeleton } from './ApodSkeleton';
 import { Info, Calendar } from 'lucide-react';
@@ -29,7 +30,13 @@ export const ApodHero: React.FC = () => {
     ["mp4", "webm", "ogg"].some(ext => data.url.toLowerCase().endsWith(ext));
 
   return (
-    <section className="relative w-full h-[600px] md:h-[70vh] max-h-[800px] bg-space-dark overflow-hidden rounded-2xl border border-white/10 my-6 shadow-[0_0_40px_rgba(0,240,255,0.1)] group">
+    <motion.section
+      initial={{ opacity: 0, y: 22 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.18 }}
+      transition={{ duration: 0.55, ease: [0.215, 0.61, 0.355, 1] }}
+      className="relative w-full h-[600px] md:h-[70vh] max-h-[800px] bg-space-dark overflow-hidden rounded-2xl border border-white/10 my-6 shadow-[0_0_40px_rgba(0,240,255,0.1)] group"
+    >
       {/* Media Background */}
       {data.mediaType === 'video' ? (
         isVideoFile ? (
@@ -63,7 +70,12 @@ export const ApodHero: React.FC = () => {
       <div className="absolute inset-0 bg-gradient-to-t from-space-navy via-space-navy/50 to-transparent pointer-events-none" />
 
       {/* Content Area */}
-      <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12 flex flex-col md:flex-row justify-between items-end gap-6">
+      <motion.div
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.1, ease: [0.215, 0.61, 0.355, 1] }}
+        className="absolute bottom-0 left-0 right-0 p-8 md:p-12 flex flex-col md:flex-row justify-between items-end gap-6"
+      >
         <div className="max-w-3xl">
           <div className="flex items-center gap-3 mb-3 text-electric-blue font-mono text-sm opacity-90">
             <span className="flex items-center gap-1.5 bg-electric-blue/10 px-2.5 py-1 rounded-sm border border-electric-blue/30 text-glow">
@@ -86,11 +98,15 @@ export const ApodHero: React.FC = () => {
         </div>
 
         {/* Desktop Explanation Panel (or Toggled Mobile Panel) */}
-        <div className={`
+        <motion.div
+        layout
+        transition={{ duration: 0.35, ease: [0.215, 0.61, 0.355, 1] }}
+        className={`
           glass-panel p-6 rounded-xl max-w-lg transition-all duration-500
           ${showInfo ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0 pointer-events-none'} 
           md:translate-y-0 md:opacity-100 md:pointer-events-auto
-        `}>
+        `}
+      >
           <div className="flex items-center gap-2 mb-3 border-b border-white/10 pb-2">
             <Info className="w-5 h-5 text-electric-blue" />
             <h3 className="font-display text-lg tracking-wide">Mission Details</h3>
@@ -103,8 +119,8 @@ export const ApodHero: React.FC = () => {
               © {data.copyright}
             </p>
           )}
-        </div>
-      </div>
-    </section>
+        </motion.div>
+      </motion.div>
+    </motion.section>
   );
 };

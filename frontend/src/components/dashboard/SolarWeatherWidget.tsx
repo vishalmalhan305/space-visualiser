@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useRecentWeather } from '../../hooks/useWeather';
 import { useWeatherPaginated } from '../../hooks/useWeatherPaginated';
 import { Sun, Flame, ChevronDown, ChevronUp, ArrowLeft, ArrowRight, Activity } from 'lucide-react';
@@ -47,7 +48,7 @@ export function SolarWeatherWidget() {
   const colors = statusColors[status];
 
   return (
-    <div className="glass-panel rounded-xl overflow-hidden flex flex-col transition-all duration-500">
+    <motion.div layout className="glass-panel rounded-xl overflow-hidden flex flex-col transition-all duration-500">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
         <div className="flex items-center gap-3">
@@ -56,12 +57,14 @@ export function SolarWeatherWidget() {
             Solar Observation
           </h2>
         </div>
-        <button 
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => setIsExpanded(!isExpanded)}
           className="p-1 hover:bg-white/5 rounded transition-colors text-gray-500 hover:text-white"
         >
           {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-        </button>
+        </motion.button>
       </div>
 
       {/* Main Status Display */}
@@ -94,51 +97,64 @@ export function SolarWeatherWidget() {
       </div>
 
       {/* Expanded Controls: Filters & Pagination */}
-      {isExpanded && (
-        <div className="bg-white/[0.02] border-t border-b border-white/5 px-5 py-3 flex flex-wrap items-center justify-between gap-4 animate-in fade-in duration-300">
-          <div className="flex items-center gap-2">
-            <select
-              value={typeFilter || ''}
-              onChange={(e) => {
-                setTypeFilter(e.target.value === '' ? undefined : e.target.value as SpaceWeatherEventType);
-                setPage(0);
-              }}
-              className="bg-white/5 border border-white/10 text-gray-300 text-[10px] font-mono rounded-md px-2 py-1.5 focus:outline-none focus:border-electric-blue/50 uppercase tracking-widest"
-            >
-              <option value="">ALL EVENTS</option>
-              <option value="FLARE">SOLAR FLARES</option>
-              <option value="CME">EJECTIONS (CME)</option>
-              <option value="GST">STORM (GST)</option>
-              <option value="SEP">PARTICLES (SEP)</option>
-            </select>
-            {paginated && (
-               <span className="text-[10px] font-mono text-gray-600 uppercase tracking-wide">
-                 {paginated.totalElements} Records
-               </span>
-            )}
-          </div>
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            layout
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.35, ease: [0.215, 0.61, 0.355, 1] }}
+            className="overflow-hidden bg-white/[0.02] border-t border-b border-white/5 px-5 py-3 flex flex-wrap items-center justify-between gap-4"
+          >
+            <div className="flex items-center gap-2">
+              <select
+                value={typeFilter || ''}
+                onChange={(e) => {
+                  setTypeFilter(e.target.value === '' ? undefined : e.target.value as SpaceWeatherEventType);
+                  setPage(0);
+                }}
+                className="bg-white/5 border border-white/10 text-gray-300 text-[10px] font-mono rounded-md px-2 py-1.5 focus:outline-none focus:border-electric-blue/50 uppercase tracking-widest"
+              >
+                <option value="">ALL EVENTS</option>
+                <option value="FLARE">SOLAR FLARES</option>
+                <option value="CME">EJECTIONS (CME)</option>
+                <option value="GST">STORM (GST)</option>
+                <option value="SEP">PARTICLES (SEP)</option>
+              </select>
+              {paginated && (
+                 <span className="text-[10px] font-mono text-gray-600 uppercase tracking-wide">
+                   {paginated.totalElements} Records
+                 </span>
+              )}
+            </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              disabled={page === 0 || isPaginatedLoading}
-              onClick={() => setPage(p => p - 1)}
-              className="p-1 hover:bg-white/10 disabled:opacity-30 rounded transition-colors text-amber-400"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest">
-              LOG {page + 1}/{paginated?.totalPages || 1}
-            </span>
-            <button
-              disabled={(paginated && page >= paginated.totalPages - 1) || isPaginatedLoading}
-              onClick={() => setPage(p => p + 1)}
-              className="p-1 hover:bg-white/10 disabled:opacity-30 rounded transition-colors text-amber-400"
-            >
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
+            <div className="flex items-center gap-2">
+              <motion.button
+                whileHover={{ scale: page === 0 || isPaginatedLoading ? 1 : 1.03 }}
+                whileTap={{ scale: page === 0 || isPaginatedLoading ? 1 : 0.98 }}
+                disabled={page === 0 || isPaginatedLoading}
+                onClick={() => setPage(p => p - 1)}
+                className="p-1 hover:bg-white/10 disabled:opacity-30 rounded transition-colors text-amber-400"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </motion.button>
+              <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest">
+                LOG {page + 1}/{paginated?.totalPages || 1}
+              </span>
+              <motion.button
+                whileHover={{ scale: (paginated && page >= paginated.totalPages - 1) || isPaginatedLoading ? 1 : 1.03 }}
+                whileTap={{ scale: (paginated && page >= paginated.totalPages - 1) || isPaginatedLoading ? 1 : 0.98 }}
+                disabled={(paginated && page >= paginated.totalPages - 1) || isPaginatedLoading}
+                onClick={() => setPage(p => p + 1)}
+                className="p-1 hover:bg-white/10 disabled:opacity-30 rounded transition-colors text-amber-400"
+              >
+                <ArrowRight className="w-4 h-4" />
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Events List */}
       <div className={`px-5 py-2 space-y-2 flex-1 transition-all duration-500 ${isExpanded ? 'max-h-[500px]' : 'max-h-[160px]'} overflow-y-auto custom-scrollbar`}>
@@ -215,6 +231,6 @@ export function SolarWeatherWidget() {
           Detailed Telemetry <ArrowRight className="w-3 h-3" />
         </a>
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -1,24 +1,26 @@
 package com.space.visualiser_api.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.space.visualiser_api.visualiser.dto.IssPositionDto;
+import java.time.Duration;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.space.visualiser_api.visualiser.dto.IssPositionDto;
+
 import reactor.core.publisher.Mono;
-
-import java.time.Duration;
-
+//Service for fetching and caching the current International Space Station (ISS) position 
 @Service
 public class IssService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IssService.class);
     private static final String CACHE_KEY = "iss:position";
-    private static final Duration CACHE_TTL = Duration.ofSeconds(10);
+    private static final Duration CACHE_TTL = Duration.ofSeconds(15);
 
     private final WebClient issWebClient;
     private final StringRedisTemplate redisTemplate;
@@ -57,7 +59,7 @@ public class IssService {
         // 3. Absolute fallback if even the cache is empty
         return null;
     }
-
+        // The following methods handle cache interactions and external API calls, with robust error handling to ensure the service remains responsive even if dependencies fail.
     private String readFromCache() {
         try {
             return redisTemplate.opsForValue().get(CACHE_KEY);
@@ -66,7 +68,7 @@ public class IssService {
             return null;
         }
     }
-
+    // Cache the latest position with a TTL, but don't let failures here affect the main flow
     private void writeToCache(IssPositionDto position) {
         try {
             String payload = objectMapper.writeValueAsString(position);
@@ -75,7 +77,7 @@ public class IssService {
             LOGGER.warn("Failed to update Redis cache", e);
         }
     }
-
+    // Fetch the current ISS position from the external API, with a timeout and error handling to prevent cascading failures
     private IssPositionDto fetchFromExternal() {
         try {
             return issWebClient.get()
@@ -86,7 +88,7 @@ public class IssService {
                     .retrieve()
                     .bodyToMono(IssPositionDto.class)
                     // Increase timeout since Postman confirmed the API is slow (8s+)
-                    .timeout(Duration.ofSeconds(15))
+                    .timeout(Duration.ofSeconds(12))
                     .onErrorResume(e -> {
                         LOGGER.error("ISS API slow or down: {}", e.getMessage());
                         return Mono.empty();

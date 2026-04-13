@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import type { MarsPhoto } from '../../types/mars';
 import { ExternalLink } from 'lucide-react';
 
@@ -6,6 +7,24 @@ interface Props {
   photos?: MarsPhoto[];
   isLoading: boolean;
 }
+
+const gridVariants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.55,
+      ease: [0.215, 0.61, 0.355, 1],
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 18 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.215, 0.61, 0.355, 1] } },
+};
 
 export const MarsMasonryGrid: React.FC<Props> = ({ photos, isLoading }) => {
   if (isLoading) {
@@ -34,10 +53,18 @@ export const MarsMasonryGrid: React.FC<Props> = ({ photos, isLoading }) => {
   }
 
   return (
-    <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
+    <motion.div
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.2 }}
+      variants={gridVariants}
+      className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6"
+    >
       {photos.map((photo) => (
-        <div 
-          key={photo.photoId} 
+        <motion.div
+          key={photo.photoId}
+          variants={cardVariants}
+          whileHover={{ scale: 1.02 }}
           className="relative break-inside-avoid group rounded-xl overflow-hidden border border-white/10 bg-space-navy shadow-lg"
         >
           <img
@@ -68,8 +95,8 @@ export const MarsMasonryGrid: React.FC<Props> = ({ photos, isLoading }) => {
               </a>
             </div>
           </div>
-        </div>
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 };

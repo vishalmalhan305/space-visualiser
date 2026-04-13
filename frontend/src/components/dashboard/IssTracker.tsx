@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import { useIssPosition } from '../../hooks/useIssPosition';
 import { Satellite, Navigation, Clock } from 'lucide-react';
 
@@ -18,22 +19,40 @@ export function IssTracker() {
 
   if (isError) {
     return (
-      <div className="glass-panel rounded-xl overflow-hidden flex flex-col p-8 items-center justify-center text-center min-h-[300px]">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.5, ease: [0.215, 0.61, 0.355, 1] }}
+        className="glass-panel rounded-xl overflow-hidden flex flex-col p-8 items-center justify-center text-center min-h-[300px]"
+      >
         <Satellite className="text-red-400 w-12 h-12 mb-4 opacity-50" />
         <h3 className="text-white font-display text-lg mb-2">Telemetry Lost</h3>
         <p className="text-gray-400 text-sm max-w-[200px]">
           Unable to establish connection with ISS tracking satellite.
         </p>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="glass-panel rounded-xl overflow-hidden flex flex-col">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.5, ease: [0.215, 0.61, 0.355, 1] }}
+      className="glass-panel rounded-xl overflow-hidden flex flex-col"
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
         <div className="flex items-center gap-3">
-          <Satellite className="text-electric-blue w-5 h-5 animate-pulse" />
+          <motion.span
+            animate={{ scale: [1, 1.08, 1] }}
+            transition={{ repeat: Infinity, duration: 2.5, ease: [0.215, 0.61, 0.355, 1] }}
+            className="inline-flex"
+          >
+            <Satellite className="text-electric-blue w-5 h-5" />
+          </motion.span>
           <h2 className="font-display text-sm tracking-widest uppercase text-white">
             ISS Live Position
           </h2>
@@ -84,9 +103,13 @@ export function IssTracker() {
 
       {/* Live dot indicator */}
       <div className="px-5 pb-4 flex items-center gap-2 text-[10px] font-mono text-gray-500">
-        <span className="inline-block w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+        <motion.span
+          className="inline-block w-2 h-2 rounded-full bg-green-400"
+          animate={{ scale: [1, 1.2, 1], opacity: [1, 0.7, 1] }}
+          transition={{ repeat: Infinity, duration: 2.2, ease: [0.215, 0.61, 0.355, 1] }}
+        />
         UPDATING EVERY 15 SECONDS
       </div>
-    </div>
+    </motion.div>
   );
 }
