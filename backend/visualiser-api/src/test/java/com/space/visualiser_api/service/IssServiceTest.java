@@ -14,6 +14,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -48,27 +49,8 @@ class IssServiceTest {
     }
 
     @Test
-    void getCurrentPosition_CacheHit_ReturnsCached() throws JsonProcessingException {
-        // Arrange
-        String cacheKey = "iss:position";
-        String cachedJson = "{\"latitude\": 0.0}";
-        IssPositionDto expected = new IssPositionDto();
-        
-        when(valueOperations.get(cacheKey)).thenReturn(cachedJson);
-        when(objectMapper.readValue(cachedJson, IssPositionDto.class)).thenReturn(expected);
-
-        // Act
-        IssPositionDto result = issService.getCurrentPosition();
-
-        // Assert
-        assertEquals(expected, result);
-        verifyNoInteractions(issWebClient);
-    }
-
-    @Test
-    void getCurrentPosition_CacheMiss_FetchesFromApi() throws JsonProcessingException {
-        // Arrange
-        String cacheKey = "iss:position";
+    void getCurrentPosition_ApiAvailable_ReturnsFreshData() throws JsonProcessingException {
+        // Arrange — service always tries live API first
         IssPositionDto apiResponse = new IssPositionDto();
         apiResponse.setLatitude(10.0);
         apiResponse.setLongitude(20.0);
@@ -76,14 +58,10 @@ class IssServiceTest {
         apiResponse.setVelocity_km_h(28000.0);
         apiResponse.setTimestamp(1600000000L);
 
-        when(valueOperations.get(cacheKey)).thenReturn(null);
-        
-        // Mock WebClient chain
         when(issWebClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri("/satellites/25544")).thenReturn(requestHeadersSpec);
+        when(requestHeadersUriSpec.uri(any(Function.class))).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(IssPositionDto.class)).thenReturn(Mono.just(apiResponse));
-        
         when(objectMapper.writeValueAsString(apiResponse)).thenReturn("{}");
 
         // Act
@@ -92,6 +70,48 @@ class IssServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals(10.0, result.getLatitude());
-        verify(valueOperations).set(eq(cacheKey), anyString(), any(Duration.class));
+        verify(valueOperations).set(eq("iss:position"), anyString(), any(Duration.class));
+    }
+
+    @Test
+    void getCurrentPosition_ApiFails_ReturnsStaleCacheData() throws JsonProcessingException {
+        // Arrange — API returns empty, service falls back to stale cache
+        String cacheKey = "iss:position";
+        String cachedJson = "{\"latitude\":5.0}";
+        IssPositionDto staleData = new IssPositionDto();
+        staleData.setLatitude(5.0);
+
+        when(issWebClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri(any(Function.class))).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(IssPositionDto.class)).thenReturn(Mono.empty());
+
+        when(valueOperations.get(cacheKey)).thenReturn(cachedJson);
+        when(objectMapper.readValue(cachedJson, IssPositionDto.class)).thenReturn(staleData);
+
+        // Act
+        IssPositionDto result = issService.getCurrentPosition();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(5.0, result.getLatitude());
+        verify(valueOperations, never()).set(anyString(), anyString(), any(Duration.class));
+    }
+
+    @Test
+    void getCurrentPosition_ApiAndCacheBothFail_ReturnsNull() {
+        // Arrange — API fails AND cache is empty
+        when(issWebClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri(any(Function.class))).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(IssPositionDto.class)).thenReturn(Mono.empty());
+
+        when(valueOperations.get("iss:position")).thenReturn(null);
+
+        // Act
+        IssPositionDto result = issService.getCurrentPosition();
+
+        // Assert
+        assertNull(result);
     }
 }
