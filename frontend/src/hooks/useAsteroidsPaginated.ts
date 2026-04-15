@@ -11,15 +11,23 @@ export interface PaginatedResponse<T> {
   size: number;
 }
 
-export function useAsteroidsPaginated(page: number, size: number, hazardous?: boolean) {
+export interface AsteroidsQueryFilters {
+  start?: string;
+  end?: string;
+  hazardous?: boolean;
+  sortBy?: string;
+  sortDir?: 'ASC' | 'DESC';
+}
+
+export function useAsteroidsPaginated(page: number, size: number, filters: AsteroidsQueryFilters = {}) {
   return useQuery({
-    queryKey: ['asteroids', 'page', page, size, hazardous],
+    queryKey: ['asteroids', 'page', page, size, filters],
     queryFn: async () => {
       const { data } = await api.get<PaginatedResponse<Asteroid>>(ENDPOINTS.ASTEROIDS.PAGE, {
         params: {
           page,
           size,
-          hazardous: hazardous === undefined ? null : hazardous
+          ...filters
         }
       });
       return data;

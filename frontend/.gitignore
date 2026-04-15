@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.agent
+.continue
+
+CODEBASE_SUMMARY.md
+DEVELOPMENT_RULES.md
+DESIGN_DECISIONS.md

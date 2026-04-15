@@ -21,4 +21,12 @@ public class MetricsConfig {
                 .description("Total cache misses across space APIs")
                 .register(meterRegistry);
     }
+
+    @Bean("asteroidQueryTimer")
+    public io.micrometer.core.instrument.Timer asteroidQueryTimer(MeterRegistry meterRegistry) {
+        return io.micrometer.core.instrument.Timer.builder("asteroid.query.latency")
+                .description("Latency for asteroid page queries")
+                .publishPercentiles(0.5, 0.95, 0.99)
+                .register(meterRegistry);
+    }
 }

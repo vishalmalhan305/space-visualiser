@@ -158,7 +158,7 @@ class MarsServiceTest {
     }
 
     @Test
-    void getPhotos_CacheMiss_DbMiss_NasaFailure_ReturnsEmptyListInsteadOfThrowing() {
+    void getPhotos_CacheMiss_DbMiss_NasaFailure_ReturnsEmptyListInsteadOfThrowing() throws JsonProcessingException {
         // Arrange
         String rover = "curiosity";
         String camera = "FHAZ";

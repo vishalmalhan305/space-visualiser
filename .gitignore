@@ -23,9 +23,11 @@ dist/
 # Docker
 *.env
 
+# AI / Agents
 .agent
 .continue
-
 CODEBASE_SUMMARY.md
 DEVELOPMENT_RULES.md
 DESIGN_DECISIONS.md
+implementation_plan.md
+asteroid-tracker-upgrade.md

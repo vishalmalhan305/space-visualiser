@@ -8,6 +8,7 @@ import { AsteroidTracker } from './components/dashboard/AsteroidTracker';
 import { SolarWeatherWidget } from './components/dashboard/SolarWeatherWidget';
 import { IssTracker } from './components/dashboard/IssTracker';
 import { MarsPhotosPage } from './pages/MarsPhotosPage';
+import { AsteroidDetailPage } from './pages/AsteroidDetailPage';
 
 function SectionDivider({ label }: { label: string }) {
   return (
@@ -77,6 +78,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Reveal><Dashboard /></Reveal>} />
           <Route path="/mars" element={<Reveal><MarsPhotosPage /></Reveal>} />
+          <Route path="/asteroids" element={<Reveal><AsteroidDetailPage /></Reveal>} />
         </Routes>
 
       <footer className="py-8 px-6 border-t border-white/5 bg-space-dark">

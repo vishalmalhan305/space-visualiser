@@ -6,7 +6,7 @@ import { StatusBar } from '../dashboard/StatusBar';
 
 const navLinks = [
   { label: 'Dashboard', href: '/' },
-  { label: 'Asteroids', href: '/#asteroids' },
+  { label: 'Asteroids', href: '/asteroids' },
   { label: 'Mars',      href: '/mars' },
   { label: 'Solar',     href: '/#solar' },
   { label: 'ISS',       href: '/#iss' },

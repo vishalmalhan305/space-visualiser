@@ -33,8 +33,10 @@ class AsteroidControllerTest {
         Asteroid asteroid = new Asteroid();
         asteroid.setNeoId("123");
         Page<Asteroid> page = new PageImpl<>(List.of(asteroid));
-        
-        when(asteroidService.getAsteroidsPage(eq(true), eq(0), eq(10)))
+
+        // Controller defaults: sortBy="closeApproachDate", sortDir="DESC"; no start/end when omitted
+        when(asteroidService.getAsteroidsPage(
+                isNull(), isNull(), eq(true), eq("closeApproachDate"), eq("DESC"), eq(0), eq(10)))
                 .thenReturn(page);
 
         // Act & Assert
