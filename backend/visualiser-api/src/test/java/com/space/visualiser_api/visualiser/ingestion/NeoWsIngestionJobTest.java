@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -24,7 +25,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings({"unchecked", "rawtypes"})
 class NeoWsIngestionJobTest {
+
+    @Captor
+    private ArgumentCaptor<List<Asteroid>> asteroidCaptor;
 
     @Mock
     private WebClient nasaWebClient;
@@ -96,10 +101,9 @@ class NeoWsIngestionJobTest {
         ingestionJob.fetchAsteroidsForRange(startDate, endDate);
 
         // Assert
-        ArgumentCaptor<List<Asteroid>> captor = ArgumentCaptor.forClass(List.class);
-        verify(asteroidRepository).saveAll(captor.capture());
-        
-        List<Asteroid> saved = captor.getValue();
+        verify(asteroidRepository).saveAll(asteroidCaptor.capture());
+
+        List<Asteroid> saved = asteroidCaptor.getValue();
         assertEquals(1, saved.size());
         assertEquals("AST1", saved.get(0).getNeoId());
         assertEquals(10000.0, saved.get(0).getVelocity_kmh());
