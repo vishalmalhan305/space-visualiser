@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useIssPosition } from '../../hooks/useIssPosition';
-import { Satellite, Navigation, Clock } from 'lucide-react';
+import { Satellite, Navigation, Clock, RotateCcw } from 'lucide-react';
 
 function Stat({ label, value, unit }: { label: string; value: string; unit?: string }) {
   return (
@@ -15,7 +15,7 @@ function Stat({ label, value, unit }: { label: string; value: string; unit?: str
 }
 
 export function IssTracker() {
-  const { data, isLoading, isError, dataUpdatedAt } = useIssPosition();
+  const { data, isLoading, isError, dataUpdatedAt, refetch } = useIssPosition();
 
   if (isError) {
     return (
@@ -28,9 +28,20 @@ export function IssTracker() {
       >
         <Satellite className="text-red-400 w-12 h-12 mb-4 opacity-50" />
         <h3 className="text-white font-display text-lg mb-2">Telemetry Lost</h3>
-        <p className="text-gray-400 text-sm max-w-[200px]">
+        <p className="text-gray-400 text-sm max-w-[200px] mb-4">
           Unable to establish connection with ISS tracking satellite.
         </p>
+        {dataUpdatedAt > 0 && (
+          <p className="text-gray-600 text-xs font-mono mb-4">
+            Last contact: {new Date(dataUpdatedAt).toLocaleTimeString()}
+          </p>
+        )}
+        <button
+          onClick={() => refetch()}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-all text-xs font-mono"
+        >
+          <RotateCcw className="w-3.5 h-3.5" /> Retry Connection
+        </button>
       </motion.div>
     );
   }

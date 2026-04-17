@@ -23,6 +23,8 @@ public interface AsteroidRepository extends JpaRepository<Asteroid, String> {
 
     Page<Asteroid> findByPotentiallyHazardous(boolean potentiallyHazardous, Pageable pageable);
 
+    java.util.Optional<Asteroid> findFirstByNeoId(String neoId);
+
     @Query("SELECT a FROM Asteroid a WHERE " +
            "(:hazardous IS NULL OR a.potentiallyHazardous = :hazardous) AND " +
            "(:start IS NULL OR a.closeApproachDate >= :start) AND " +

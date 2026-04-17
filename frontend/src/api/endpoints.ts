@@ -21,4 +21,7 @@ export const ENDPOINTS = {
   MARS: {
     PHOTOS: (rover: string, camera: string, sol: number) => `/api/mars/photos?rover=${rover}&camera=${camera}&sol=${sol}`,
   },
+  AI: {
+    EXPLAIN: (type: string, id: string) => `/api/ai/explain?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`,
+  },
 } as const;
