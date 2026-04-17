@@ -225,10 +225,10 @@ export function SolarWeatherWidget() {
           {isExpanded ? 'Minimize Log' : 'Event Archive'}
         </button>
         <a
-          href="/#solar"
+          href="/solar"
           className="flex items-center gap-2 text-[10px] font-mono font-bold text-amber-400/80 hover:text-amber-400 transition-all uppercase tracking-widest"
         >
-          Detailed Telemetry <ArrowRight className="w-3 h-3" />
+          Mission Control <ArrowRight className="w-3 h-3" />
         </a>
       </div>
     </motion.div>

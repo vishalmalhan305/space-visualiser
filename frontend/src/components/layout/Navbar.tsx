@@ -8,7 +8,7 @@ const navLinks = [
   { label: 'Dashboard', href: '/' },
   { label: 'Asteroids', href: '/asteroids' },
   { label: 'Mars',      href: '/mars' },
-  { label: 'Solar',     href: '/#solar' },
+  { label: 'Solar',     href: '/solar' },
   { label: 'ISS',       href: '/#iss' },
 ];
 

@@ -11,7 +11,7 @@ env:
   FRONTEND_IMAGE_NAME: space-visualiser-frontend
   ECS_CLUSTER: space-visualiser-cluster
   ECS_SERVICE: space-visualiser-service-zwb2r93g
-ECS_TASK_FAMILY: space-visualiser
+  ECS_TASK_FAMILY: space-visualiser
 
 jobs:
   deploy:

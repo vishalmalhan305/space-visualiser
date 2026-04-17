@@ -9,6 +9,8 @@ import { SolarWeatherWidget } from './components/dashboard/SolarWeatherWidget';
 import { IssTracker } from './components/dashboard/IssTracker';
 import { MarsPhotosPage } from './pages/MarsPhotosPage';
 import { AsteroidDetailPage } from './pages/AsteroidDetailPage';
+import { SolarMissionPage } from './pages/SolarMissionPage';
+import { Toaster } from 'sonner';
 
 function SectionDivider({ label }: { label: string }) {
   return (
@@ -79,22 +81,38 @@ function App() {
           <Route path="/" element={<Reveal><Dashboard /></Reveal>} />
           <Route path="/mars" element={<Reveal><MarsPhotosPage /></Reveal>} />
           <Route path="/asteroids" element={<Reveal><AsteroidDetailPage /></Reveal>} />
+          <Route path="/solar" element={<Reveal><SolarMissionPage /></Reveal>} />
         </Routes>
 
       <footer className="py-8 px-6 border-t border-white/5 bg-space-dark">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3 text-gray-600 text-xs font-mono">
           <div className="flex items-center gap-2">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 motion-safe:animate-pulse" />
             <p>© 2026 SPACE CTRL · ALL SYSTEMS NOMINAL</p>
           </div>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-electric-blue transition-colors">PROTOCOLS</a>
-            <a href="#" className="hover:text-electric-blue transition-colors">SECURITY</a>
-            <a href="#" className="hover:text-electric-blue transition-colors">NASA OPEN DATA</a>
+            <a href="/solar" className="hover:text-electric-blue transition-colors">PROTOCOLS</a>
+            <a href="/asteroids" className="hover:text-electric-blue transition-colors">NEO LEDGER</a>
+            <a href="https://api.nasa.gov" target="_blank" rel="noopener noreferrer" className="hover:text-electric-blue transition-colors">NASA OPEN DATA</a>
           </div>
         </div>
       </footer>
       </div>
+
+      <Toaster
+        position="bottom-right"
+        theme="dark"
+        toastOptions={{
+          style: {
+            background: 'rgba(10,14,26,0.95)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            color: '#e5e7eb',
+            fontFamily: 'monospace',
+            fontSize: '12px',
+            borderRadius: '12px',
+          },
+        }}
+      />
     </Router>
   );
 }
