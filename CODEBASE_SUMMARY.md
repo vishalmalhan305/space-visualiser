@@ -57,7 +57,7 @@ React SPA
 | **Ingestion** | Spring Scheduler + WebClient | Scheduled NASA API pulls |
 | **Cache Layer** | Redis 7 | Cache-aside pattern, TTL-based invalidation |
 | **Database** | PostgreSQL 16 | Persistent storage for all space data |
-| **AI Service** | Claude API (Anthropic) | Plain-English event explanations |
+| **AI Service** | Gemini API | Plain-English event explanations |
 | **Alerts** | AWS SES | Email notifications for space events |
 | **CI/CD** | GitHub Actions | Automated test → build → deploy |
 | **Monitoring** | CloudWatch + Prometheus | Metrics, logs, alarms |

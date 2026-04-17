@@ -1,7 +1,9 @@
 package com.space.visualiser_api.service;
 
 import com.space.visualiser_api.entity.AiExplanation;
+import com.space.visualiser_api.entity.Asteroid;
 import com.space.visualiser_api.repository.AiExplanationRepository;
+import com.space.visualiser_api.repository.AsteroidRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,6 +11,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.util.retry.Retry;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -28,6 +31,7 @@ public class AiExplanationService {
 
     private final WebClient geminiWebClient;
     private final AiExplanationRepository repository;
+    private final AsteroidRepository asteroidRepository;
     private final StringRedisTemplate redisTemplate;
     private final String apiKey;
     private final String model;
@@ -36,12 +40,14 @@ public class AiExplanationService {
     public AiExplanationService(
             @Qualifier("geminiWebClient") WebClient geminiWebClient,
             AiExplanationRepository repository,
+            AsteroidRepository asteroidRepository,
             StringRedisTemplate redisTemplate,
             @Value("${app.gemini.api-key:}") String apiKey,
-            @Value("${app.gemini.model:gemini-1.5-flash}") String model,
+            @Value("${app.gemini.model:gemini-2.5-flash}") String model,
             @Value("${app.gemini.explanation-cache-ttl:PT24H}") Duration cacheTtl
     ) {
         this.geminiWebClient = geminiWebClient;
+        this.asteroidRepository = asteroidRepository;
         this.repository = repository;
         this.redisTemplate = redisTemplate;
         this.apiKey = apiKey;
@@ -111,6 +117,9 @@ public class AiExplanationService {
                     .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(Map.class)
+                    .retryWhen(Retry.backoff(3, Duration.ofSeconds(2))
+                            .filter(t -> t instanceof WebClientResponseException ex
+                                    && ex.getStatusCode().value() >= 500))
                     .block();
 
             return extractText(response);
@@ -161,6 +170,33 @@ public class AiExplanationService {
     }
 
     private String buildPrompt(String eventType, String eventId) {
+        if ("asteroid".equalsIgnoreCase(eventType)) {
+            return asteroidRepository.findFirstByNeoId(eventId)
+                    .map(this::buildAsteroidPrompt)
+                    .orElseGet(() -> buildGenericPrompt(eventType, eventId));
+        }
+        return buildGenericPrompt(eventType, eventId);
+    }
+
+    private String buildAsteroidPrompt(Asteroid a) {
+        return String.format(
+                "You are a science communicator explaining near-Earth objects to the public. "
+                + "Explain the following asteroid in plain English in 2-3 engaging sentences. "
+                + "Focus on its name, size, and whether it poses any threat. "
+                + "Name: %s (NASA ID: %s). "
+                + "Estimated diameter: %.3f–%.3f km. "
+                + "Closest approach: %s at %.2f million km. "
+                + "Velocity: %.0f km/h. "
+                + "Potentially hazardous: %s.",
+                a.getName(), a.getNeoId(),
+                a.getEstDiameterKmMin(), a.getEstDiameterKmMax(),
+                a.getCloseApproachDate(), a.getMissDistanceKm() / 1_000_000.0,
+                a.getVelocity_kmh(),
+                a.isPotentiallyHazardous() ? "yes" : "no"
+        );
+    }
+
+    private String buildGenericPrompt(String eventType, String eventId) {
         return String.format(
                 "You are a science communicator explaining space events to the public. "
                 + "Explain the following space event in plain English in 2-3 sentences. "
