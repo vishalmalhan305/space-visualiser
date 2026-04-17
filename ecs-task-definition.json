@@ -1,0 +1,101 @@
+{
+  "family": "space-visualiser",
+  "executionRoleArn": "arn:aws:iam::435472314090:role/ecsTaskExecutionRole",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "containerDefinitions": [
+    {
+      "name": "backend",
+      "image": "435472314090.dkr.ecr.us-east-1.amazonaws.com/space-visualiser-api:latest",
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "hostPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "SPRING_DATASOURCE_URL",
+          "value": "jdbc:postgresql://space-visualiser-db.cy9e0ogucqvf.us-east-1.rds.amazonaws.com:5432/spacedb"
+        },
+        {
+          "name": "SPRING_DATASOURCE_USERNAME",
+          "value": "space_admin"
+        },
+        {
+          "name": "SPRING_DATA_REDIS_HOST",
+          "value": "space-visualiser-redis.hzvhyl.0001.use1.cache.amazonaws.com"
+        },
+        {
+          "name": "SPRING_DATA_REDIS_PORT",
+          "value": "6379"
+        },
+        {
+          "name": "JAVA_OPTS",
+          "value": "-Xmx512m -Xms256m"
+        },
+        {
+          "name": "LOGGING_LEVEL_ROOT",
+          "value": "INFO"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "SPRING_DATASOURCE_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:435472314090:secret:space-visualiser/api-secrets:DB_PASSWORD::"
+        },
+        {
+          "name": "NASA_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:435472314090:secret:space-visualiser/api-secrets:NASA_API_KEY::"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/space-visualiser",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "backend",
+          "awslogs-create-group": "true"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"],
+        "interval": 30,
+        "timeout": 15,
+        "retries": 3,
+        "startPeriod": 120
+      },
+      "essential": true
+    },
+    {
+      "name": "frontend",
+      "image": "435472314090.dkr.ecr.us-east-1.amazonaws.com/space-visualiser-frontend:latest",
+      "portMappings": [
+        {
+          "containerPort": 80,
+          "hostPort": 80,
+          "protocol": "tcp"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/space-visualiser",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "frontend",
+          "awslogs-create-group": "true"
+        }
+      },
+      "dependsOn": [
+        {
+          "containerName": "backend",
+          "condition": "HEALTHY"
+        }
+      ],
+      "essential": true
+    }
+  ]
+}

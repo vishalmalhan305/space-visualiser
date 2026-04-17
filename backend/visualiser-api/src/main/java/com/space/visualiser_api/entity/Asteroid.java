@@ -28,6 +28,9 @@ public class Asteroid {
     @Column(name = "est_diameter_km_max")
     private double estDiameterKmMax;
 
+    @org.hibernate.annotations.Formula("(est_diameter_km_min + est_diameter_km_max) / 2")
+    private double averageDiameterKm;
+
     @Column(name = "is_potentially_hazardous", nullable = false)
     private boolean potentiallyHazardous;
 
@@ -47,6 +50,19 @@ public class Asteroid {
     private double eccentricity;
 
     private double inclination;
+
+    @Column(name = "ascending_node_longitude")
+    private Double ascendingNodeLongitude;
+
+    @Column(name = "perihelion_argument")
+    private Double perihelionArgument;
+
+    @Column(name = "mean_anomaly")
+    private Double meanAnomaly;
+
+    /** Epoch of osculation in Julian Day Number (TDB). */
+    @Column(name = "epoch_osculation")
+    private Double epochOsculation;
 
     @Column(name = "ingested_at", nullable = false)
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")

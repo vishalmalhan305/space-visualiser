@@ -74,5 +74,18 @@ public class NeoWsResponseDto {
 
         private String eccentricity;
         private String inclination;
+
+        @JsonProperty("ascending_node_longitude")
+        private String ascendingNodeLongitude;
+
+        @JsonProperty("perihelion_argument")
+        private String perihelionArgument;
+
+        @JsonProperty("mean_anomaly")
+        private String meanAnomaly;
+
+        /** Epoch of osculation in Julian Day Number (TDB). */
+        @JsonProperty("epoch_osculation")
+        private String epochOsculation;
     }
 }

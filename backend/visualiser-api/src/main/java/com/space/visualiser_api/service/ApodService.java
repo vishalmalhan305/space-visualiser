@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.space.visualiser_api.entity.ApodEntry;
 import com.space.visualiser_api.repository.ApodRepository;
+import com.space.visualiser_api.visualiser.ingestion.ApodIngestionJob;
 import io.micrometer.core.instrument.Counter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,16 +23,13 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-
 @Service
 public class ApodService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ApodService.class);
 
     private final ApodRepository apodRepository;
+    private ApodIngestionJob apodIngestionJob;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final Duration cacheTtl;
@@ -40,6 +38,7 @@ public class ApodService {
 
     public ApodService(
             ApodRepository apodRepository,
+            ApodIngestionJob apodIngestionJob,
             StringRedisTemplate redisTemplate,
             ObjectMapper objectMapper,
             @Qualifier("spaceCacheHitsCounter") Counter cacheHitsCounter,
@@ -47,6 +46,7 @@ public class ApodService {
             @Value("${app.apod.cache-ttl:PT24H}") Duration cacheTtl
     ) {
         this.apodRepository = apodRepository;
+        this.apodIngestionJob = apodIngestionJob;
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
         this.cacheHitsCounter = cacheHitsCounter;
@@ -60,24 +60,29 @@ public class ApodService {
 
     public List<ApodEntry> getArchive(int count) {
         String cacheKey = "apod:archive:" + count;
-        String cached = redisTemplate.opsForValue().get(cacheKey);
+        String cached;
+        try {
+            cached = redisTemplate.opsForValue().get(cacheKey);
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Redis read failed for APOD cache key {}", cacheKey, exception);
+            cached = null;
+        }
         if (cached != null && !cached.isBlank()) {
             try {
+                LOGGER.debug("Cache HIT for key {}", cacheKey);
+                cacheHitsCounter.increment();
                 return objectMapper.readValue(cached, new TypeReference<List<ApodEntry>>() {});
             } catch (JsonProcessingException e) {
-                redisTemplate.delete(cacheKey);
+                safeDeleteCacheKey(cacheKey);
             }
         }
+        LOGGER.debug("Cache MISS for key {}", cacheKey);
+        cacheMissesCounter.increment();
 
         PageRequest page = PageRequest.of(0, count, Sort.by(Sort.Direction.DESC, "date"));
         List<ApodEntry> entries = apodRepository.findAll(page).getContent();
 
-        try {
-            String payload = objectMapper.writeValueAsString(entries);
-            redisTemplate.opsForValue().set(cacheKey, payload, cacheTtl);
-        } catch (JsonProcessingException e) {
-            // Cache write failure is non-fatal
-        }
+        writeArchiveToCache(cacheKey, entries);
 
         return entries;
     }
@@ -93,14 +98,60 @@ public class ApodService {
         LOGGER.debug("Cache MISS for key {}", cacheKey);
         cacheMissesCounter.increment();
 
-        ApodEntry apodEntry = apodRepository.findById(date)
+        return apodRepository.findById(date)
+                .or(() -> {
+                    LOGGER.info("APOD missing in DB for date {}, attempting on-demand fetch", date);
+                    try {
+                        apodIngestionJob.fetchApodForDate(date);
+                        return apodRepository.findById(date);
+                    } catch (Exception e) {
+                        LOGGER.warn("On-demand APOD fetch failed for {}", date, e);
+                        return java.util.Optional.empty();
+                    }
+                })
+                .map(entry -> {
+                    writeToCache(cacheKey, entry);
+                    return entry;
+                })
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "APOD entry not found for date " + date
                 ));
+    }
 
-        writeToCache(cacheKey, apodEntry);
-        return apodEntry;
+    public List<ApodEntry> getByDateRange(LocalDate startDate, LocalDate endDate) {
+        if (startDate.isAfter(endDate)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "start must be before or equal to end"
+            );
+        }
+
+        String cacheKey = buildRangeCacheKey(startDate, endDate);
+        String cachedValue;
+        try {
+            cachedValue = redisTemplate.opsForValue().get(cacheKey);
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Redis read failed for APOD cache key {}", cacheKey, exception);
+            cachedValue = null;
+        }
+
+        if (cachedValue != null && !cachedValue.isBlank()) {
+            try {
+                LOGGER.debug("Cache HIT for key {}", cacheKey);
+                cacheHitsCounter.increment();
+                return objectMapper.readValue(cachedValue, new TypeReference<>() {
+                });
+            } catch (JsonProcessingException exception) {
+                safeDeleteCacheKey(cacheKey);
+            }
+        }
+
+        LOGGER.debug("Cache MISS for key {}", cacheKey);
+        cacheMissesCounter.increment();
+        List<ApodEntry> entries = apodRepository.findByDateBetweenOrderByDateAsc(startDate, endDate);
+        writeArchiveToCache(cacheKey, entries);
+        return entries;
     }
 
     private ApodEntry readFromCache(String cacheKey) {
@@ -155,5 +206,9 @@ public class ApodService {
 
     private String buildCacheKey(LocalDate date) {
         return "apod:" + date;
+    }
+
+    private String buildRangeCacheKey(LocalDate startDate, LocalDate endDate) {
+        return "apod:range:" + startDate + ":" + endDate;
     }
 }

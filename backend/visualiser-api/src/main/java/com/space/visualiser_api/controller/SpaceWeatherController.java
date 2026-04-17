@@ -5,14 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.space.visualiser_api.entity.SpaceWeatherEvent;
-import com.space.visualiser_api.service.SpaceWeatherService;
-import io.github.bucket4j.Bandwidth;
-import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Refill;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +13,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+
+import com.space.visualiser_api.entity.SpaceWeatherEvent;
+import com.space.visualiser_api.entity.SpaceWeatherEventType;
+import com.space.visualiser_api.service.SpaceWeatherService;
+import com.space.visualiser_api.visualiser.dto.MonthlyWeatherStatsDto;
+
+import io.github.bucket4j.Bandwidth;
+import io.github.bucket4j.Bucket;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
 @RestController
 @RequestMapping("/api/weather")
@@ -44,6 +48,23 @@ public class SpaceWeatherController {
         return service.getRecentEvents(days);
     }
 
+    @GetMapping("/stats/monthly")
+    public List<MonthlyWeatherStatsDto> getMonthlyStats(HttpServletRequest request) {
+        enforceRateLimit(request);
+        return service.getMonthlyStats();
+    }
+
+    @GetMapping("/page")
+    public Page<SpaceWeatherEvent> getPage(
+            @RequestParam(required = false) SpaceWeatherEventType type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            HttpServletRequest request
+    ) {
+        enforceRateLimit(request);
+        return service.getWeatherPage(type, page, size);
+    }
+
     private void enforceRateLimit(HttpServletRequest request) {
         String clientIp = extractClientIp(request);
         Bucket bucket = RATE_LIMIT_BUCKETS.computeIfAbsent(clientIp, ignored -> createBucket());
@@ -53,12 +74,16 @@ public class SpaceWeatherController {
     }
 
     private Bucket createBucket() {
-        Bandwidth limit = Bandwidth.classic(
-                REQUESTS_PER_MINUTE,
-                Refill.intervally(REQUESTS_PER_MINUTE, Duration.ofMinutes(1))
-        );
-        return Bucket.builder().addLimit(limit).build();
-    }
+    // Modern fluent API
+    Bandwidth limit = Bandwidth.builder()
+            .capacity(REQUESTS_PER_MINUTE)
+            .refillIntervally(REQUESTS_PER_MINUTE, Duration.ofMinutes(1))
+            .build();
+
+    return Bucket.builder()
+            .addLimit(limit)
+            .build();
+}
 
     private String extractClientIp(HttpServletRequest request) {
         String forwardedFor = request.getHeader("X-Forwarded-For");
