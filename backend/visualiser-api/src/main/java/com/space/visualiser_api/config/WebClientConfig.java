@@ -21,4 +21,12 @@ public class WebClientConfig {
                 .baseUrl(baseUrl)
                 .build();
     }
+
+    @Bean
+    public WebClient geminiWebClient(
+            @Value("${app.gemini.base-url:https://generativelanguage.googleapis.com/v1beta/models}") String baseUrl) {
+        return WebClient.builder()
+                .baseUrl(baseUrl)
+                .build();
+    }
 }

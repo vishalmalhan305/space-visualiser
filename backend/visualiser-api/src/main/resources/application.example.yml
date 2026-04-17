@@ -46,3 +46,8 @@ app:
     cache-ttl: PT6H
   weather:
     cache-ttl: PT6H
+  gemini:
+    base-url: https://generativelanguage.googleapis.com/v1beta/models
+    api-key: your-gemini-api-key-here
+    model: gemini-1.5-flash
+    explanation-cache-ttl: PT24H
