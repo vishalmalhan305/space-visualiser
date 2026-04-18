@@ -1,5 +1,6 @@
 package com.space.visualiser_api.visualiser.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
@@ -7,12 +8,14 @@ import java.util.List;
 import java.util.Map;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class NeoWsResponseDto {
 
     @JsonProperty("near_earth_objects")
     private Map<String, List<NearEarthObjectDto>> nearEarthObjects;
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class NearEarthObjectDto {
         private String id;
         private String name;
@@ -31,11 +34,13 @@ public class NeoWsResponseDto {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class EstimatedDiameterDto {
         private DiameterRangeDto kilometers;
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class DiameterRangeDto {
         @JsonProperty("estimated_diameter_min")
         private double estimatedDiameterMin;
@@ -45,6 +50,7 @@ public class NeoWsResponseDto {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class CloseApproachDataDto {
         @JsonProperty("close_approach_date")
         private String closeApproachDate;
@@ -57,17 +63,20 @@ public class NeoWsResponseDto {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class RelativeVelocityDto {
         @JsonProperty("kilometers_per_hour")
         private String kilometersPerHour;
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class MissDistanceDto {
         private String kilometers;
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class OrbitalDataDto {
         @JsonProperty("semi_major_axis")
         private String semiMajorAxis;

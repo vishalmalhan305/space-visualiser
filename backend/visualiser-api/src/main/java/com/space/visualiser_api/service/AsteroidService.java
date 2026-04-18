@@ -261,6 +261,7 @@ public class AsteroidService {
                 .block();
 
         if (detailResponse != null && detailResponse.getOrbitalData() != null) {
+            System.out.println("Found orbital data for asteroid " + asteroid.getNeoId());
             NeoWsResponseDto.OrbitalDataDto od = detailResponse.getOrbitalData();
             asteroid.setSemi_major_axis(parseDoubleOrDefault(od.getSemiMajorAxis()));
             asteroid.setEccentricity(parseDoubleOrDefault(od.getEccentricity()));
@@ -269,6 +270,8 @@ public class AsteroidService {
             asteroid.setPerihelionArgument(parseDoubleOrNull(od.getPerihelionArgument()));
             asteroid.setMeanAnomaly(parseDoubleOrNull(od.getMeanAnomaly()));
             asteroid.setEpochOsculation(parseDoubleOrNull(od.getEpochOsculation()));
+        } else {
+            System.out.println("Orbital data was null for asteroid " + asteroid.getNeoId());
         }
     }
 

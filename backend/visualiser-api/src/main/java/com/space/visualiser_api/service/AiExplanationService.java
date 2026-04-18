@@ -117,9 +117,12 @@ public class AiExplanationService {
                     .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(Map.class)
-                    .retryWhen(Retry.backoff(3, Duration.ofSeconds(2))
+                    .retryWhen(Retry.backoff(3, Duration.ofSeconds(5))
+                            .maxBackoff(Duration.ofSeconds(30))
+                            .jitter(0.5)
                             .filter(t -> t instanceof WebClientResponseException ex
-                                    && ex.getStatusCode().value() >= 500))
+                                    && (ex.getStatusCode().value() == 429
+                                            || ex.getStatusCode().value() >= 500)))
                     .block();
 
             return extractText(response);
