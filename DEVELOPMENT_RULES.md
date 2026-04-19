@@ -19,12 +19,12 @@
 - When in doubt, ask: "Would I be proud to walk through this code with a senior engineer?"
 
 ### R3: Technology Constraints
-**Backend:** Spring Boot 3 / Java 21 only — no Kotlin, no Scala, no alternative JVM frameworks  
-**Frontend:** React 18 + TypeScript + Vite only — no Next.js, no Vue, no Angular  
+**Backend:** Spring Boot 4.1 / Java 21 only — no Kotlin, no Scala, no alternative JVM frameworks  
+**Frontend:** React 19 + TypeScript + Vite 8 only — no Next.js, no Vue, no Angular  
 **Database:** PostgreSQL 16 only — no MongoDB, no MySQL  
 **Cache:** Redis 7 only — no Memcached, no embedded caching  
 **Cloud:** AWS only (ECS, RDS, ElastiCache, SES) — no GCP, no Azure  
-**AI:** Anthropic Claude API preferred, OpenAI acceptable fallback
+**AI:** Google Gemini 2.5 Flash — configured via `GEMINI_API_KEY` / `app.gemini.api-key`
 
 **Exception:** Infrastructure-as-Code tools (Terraform) and monitoring (Prometheus/Grafana) are flexible.
 

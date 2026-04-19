@@ -72,17 +72,35 @@ Implement the **Cache-Aside pattern** using **Redis 7**.
 
 ---
 
-## DD-005: Anthropic Claude API for Explanations
-**Status:** Accepted  
-**Date:** 2026-04-08
+## DD-005: Google Gemini API for Explanations
+**Status:** Accepted (migrated from Anthropic Claude)
+**Date:** 2026-04-08 (updated 2026-04-19)
 
 ### Context
-Users need plain-language explanations for complex astronomical events (solar flares, asteroid orbits).
+Users need plain-language explanations for APOD images, asteroid close approaches, and solar events.
 
 ### Decision
-Use **Anthropic Claude API (Haiku model)**.
+Use **Google Gemini 2.5 Flash** (`gemini-2.5-flash` model via `generativelanguage.googleapis.com`).
 
 ### Rationale
-- **Quality:** Superior reasoning and conversational tone for scientific data.
-- **Cost-Effective:** The Haiku model provides high speed and low cost, perfect for a portfolio project.
-- **Caching:** Explained events are cached for 24 hours to further optimize costs.
+- **Quality:** Strong reasoning and conversational tone for scientific data.
+- **Cost-Effective:** Flash model provides high speed and low cost.
+- **Context-Aware Prompts:** The AI explanation service looks up the real entity from the DB (title, NASA explanation, orbital data) before building the Gemini prompt — ensuring specific, grounded responses rather than generic ones.
+- **Caching:** Explained events are cached for 24 hours in Redis (`ai:explain:{type}:{id}`) to minimize API costs.
+
+---
+
+## DD-006: Exoplanet Data via NASA TAP API (CSV Ingestion)
+**Status:** Accepted  
+**Date:** 2026-04-19
+
+### Context
+The NASA Exoplanet Archive provides a dataset of 5,500+ confirmed exoplanets via a TAP (Table Access Protocol) endpoint, not a standard REST API.
+
+### Decision
+Ingest exoplanet data using `ExoplanetCsvIngestionJob`, which fetches ADQL query results as CSV from the NASA Exoplanet Archive TAP API and parses them into `Exoplanet` entities.
+
+### Rationale
+- **Data Source Reality:** The TAP API is the canonical access method for the Exoplanet Archive; there is no simpler REST endpoint for bulk data.
+- **Infrequent Updates:** Exoplanet data changes rarely — a 12h cache TTL and on-demand ingestion trigger are appropriate.
+- **D3.js Scatter Plot:** The dataset's numerical fields (radius, mass, orbital period, equilibrium temperature) map naturally to a D3.js scatter plot for visual exploration.

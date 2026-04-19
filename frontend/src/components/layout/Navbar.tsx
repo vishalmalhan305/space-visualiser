@@ -5,11 +5,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { StatusBar } from '../dashboard/StatusBar';
 
 const navLinks = [
-  { label: 'Dashboard', href: '/' },
-  { label: 'Asteroids', href: '/asteroids' },
-  { label: 'Mars',      href: '/mars' },
-  { label: 'Solar',     href: '/solar' },
-  { label: 'ISS',       href: '/#iss' },
+  { label: 'Dashboard',   href: '/' },
+  { label: 'Asteroids',   href: '/asteroids' },
+  { label: 'Mars',        href: '/mars' },
+  { label: 'Solar',       href: '/solar' },
+  { label: 'Exoplanets',  href: '/exoplanets' },
+  { label: 'ISS',         href: '/#iss' },
 ];
 
 export function Navbar() {
@@ -134,7 +135,7 @@ export function Navbar() {
               {l.label.toUpperCase()}
             </a>
           ))}
-          <div className="pt-3">
+          <div className="pt-3 overflow-x-auto pb-2 -mx-4 px-4">
             <StatusBar />
           </div>
         </div>

@@ -1,8 +1,10 @@
 package com.space.visualiser_api.service;
 
 import com.space.visualiser_api.entity.AiExplanation;
+import com.space.visualiser_api.entity.ApodEntry;
 import com.space.visualiser_api.entity.Asteroid;
 import com.space.visualiser_api.repository.AiExplanationRepository;
+import com.space.visualiser_api.repository.ApodRepository;
 import com.space.visualiser_api.repository.AsteroidRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -17,7 +19,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +36,7 @@ public class AiExplanationService {
     private final WebClient geminiWebClient;
     private final AiExplanationRepository repository;
     private final AsteroidRepository asteroidRepository;
+    private final ApodRepository apodRepository;
     private final StringRedisTemplate redisTemplate;
     private final String apiKey;
     private final String model;
@@ -41,6 +46,7 @@ public class AiExplanationService {
             @Qualifier("geminiWebClient") WebClient geminiWebClient,
             AiExplanationRepository repository,
             AsteroidRepository asteroidRepository,
+            ApodRepository apodRepository,
             StringRedisTemplate redisTemplate,
             @Value("${app.gemini.api-key:}") String apiKey,
             @Value("${app.gemini.model:gemini-2.5-flash}") String model,
@@ -48,6 +54,7 @@ public class AiExplanationService {
     ) {
         this.geminiWebClient = geminiWebClient;
         this.asteroidRepository = asteroidRepository;
+        this.apodRepository = apodRepository;
         this.repository = repository;
         this.redisTemplate = redisTemplate;
         this.apiKey = apiKey;
@@ -178,7 +185,29 @@ public class AiExplanationService {
                     .map(this::buildAsteroidPrompt)
                     .orElseGet(() -> buildGenericPrompt(eventType, eventId));
         }
+        if ("apod".equalsIgnoreCase(eventType)) {
+            try {
+                return apodRepository.findById(LocalDate.parse(eventId))
+                        .map(this::buildApodPrompt)
+                        .orElseGet(() -> buildGenericPrompt(eventType, eventId));
+            } catch (DateTimeParseException ex) {
+                log.warn("Invalid APOD date id: {}", eventId);
+            }
+        }
         return buildGenericPrompt(eventType, eventId);
+    }
+
+    private String buildApodPrompt(ApodEntry apod) {
+        return String.format(
+                "You are a science communicator helping the public understand NASA's Astronomy Picture of the Day. "
+                + "Write 2-3 engaging sentences that explain what is shown, why it is significant, "
+                + "and what makes it beautiful or fascinating. Do not repeat the NASA explanation verbatim. "
+                + "Title: %s. Date: %s. NASA explanation: %s%s",
+                apod.getTitle(),
+                apod.getDate(),
+                apod.getExplanation(),
+                apod.getCopyright() != null ? " (Image credit: " + apod.getCopyright() + ")" : ""
+        );
     }
 
     private String buildAsteroidPrompt(Asteroid a) {

@@ -30,6 +30,16 @@ function getStatus(events: SpaceWeatherEvent[] = []): { status: StatusKey; peakF
   return { status, peakFlare };
 }
 
+function getPageNumbers(current: number, total: number): (number | '…')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i);
+  const pages: (number | '…')[] = [0];
+  if (current > 2) pages.push('…');
+  for (let p = Math.max(1, current - 1); p <= Math.min(total - 2, current + 1); p++) pages.push(p);
+  if (current < total - 3) pages.push('…');
+  pages.push(total - 1);
+  return pages;
+}
+
 const EVENT_TYPES: { value: SpaceWeatherEventType | ''; label: string }[] = [
   { value: '', label: 'All Events' },
   { value: 'FLARE', label: 'Solar Flares' },
@@ -226,22 +236,25 @@ export function SolarMissionPage() {
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div className="flex items-center gap-1">
-            {Array.from({ length: Math.min(totalPages, 7) }).map((_, i) => {
-              const pageNum = totalPages <= 7 ? i : i < 3 ? i : i === 3 ? page : i < 5 ? page + (i - 3) : totalPages - (6 - i);
-              return (
+            {getPageNumbers(page, totalPages).map((item, i) =>
+              item === '…' ? (
+                <span key={`ellipsis-${i}`} className="w-7 h-7 flex items-center justify-center text-[10px] font-mono text-gray-600 select-none">
+                  …
+                </span>
+              ) : (
                 <button
-                  key={i}
-                  onClick={() => setPage(pageNum)}
+                  key={item}
+                  onClick={() => setPage(item)}
                   className={`w-7 h-7 rounded-md text-[10px] font-mono transition-all ${
-                    pageNum === page
+                    item === page
                       ? 'bg-amber-500/20 border border-amber-500/40 text-amber-400'
                       : 'text-gray-500 hover:bg-white/5 hover:text-white'
                   }`}
                 >
-                  {pageNum + 1}
+                  {item + 1}
                 </button>
-              );
-            })}
+              )
+            )}
           </div>
           <button
             disabled={page >= totalPages - 1}
