@@ -1,4 +1,9 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
+const ExoplanetExplorer = lazy(() =>
+  import('./pages/ExoplanetExplorer').then((m) => ({ default: m.ExoplanetExplorer }))
+);
 import { motion } from 'framer-motion';
 import { Navbar } from './components/layout/Navbar';
 import { Reveal } from './components/layout/Reveal';
@@ -34,39 +39,62 @@ function Dashboard() {
   return (
     <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
       {/* ── APOD Hero ─────────────────────────────────────── */}
-      <section id="apod" aria-label="Astronomy Picture of the Day">
+      <motion.section
+        id="apod"
+        aria-label="Astronomy Picture of the Day"
+        initial={{ opacity: 0, y: 28 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.65, ease: [0.215, 0.61, 0.355, 1] }}
+      >
         <ApodHero />
-      </section>
+      </motion.section>
 
       <SectionDivider label="Live Space Intelligence" />
 
       {/* ── Real-Time Data Grid ───────────────────────────── */}
       <section id="intel" aria-label="Live space intelligence">
-        {/* Top row: Asteroid tracker (wide) + Solar weather + ISS */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Asteroid fills 2 columns */}
-          <div className="lg:col-span-2" id="asteroids">
+          <motion.div
+            className="lg:col-span-2"
+            id="asteroids"
+            initial={{ opacity: 0, y: 32 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.6, ease: [0.215, 0.61, 0.355, 1] }}
+          >
             <AsteroidTracker />
-          </div>
+          </motion.div>
 
-          {/* Solar + ISS stacked in third column */}
-          <div className="flex flex-col gap-6">
+          <motion.div
+            className="flex flex-col gap-6"
+            initial={{ opacity: 0, y: 32 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.6, delay: 0.12, ease: [0.215, 0.61, 0.355, 1] }}
+          >
             <div id="solar">
               <SolarWeatherWidget />
             </div>
             <div id="iss">
               <IssTracker />
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       <SectionDivider label="Mission Archive" />
 
       {/* ── APOD Archive ──────────────────────────────────── */}
-      <section id="archive" aria-label="APOD mission archive">
+      <motion.section
+        id="archive"
+        aria-label="APOD mission archive"
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-80px' }}
+        transition={{ duration: 0.7, ease: [0.215, 0.61, 0.355, 1] }}
+      >
         <ApodArchive />
-      </section>
+      </motion.section>
     </main>
   );
 }
@@ -82,6 +110,14 @@ function App() {
           <Route path="/mars" element={<Reveal><MarsPhotosPage /></Reveal>} />
           <Route path="/asteroids" element={<Reveal><AsteroidDetailPage /></Reveal>} />
           <Route path="/solar" element={<Reveal><SolarMissionPage /></Reveal>} />
+          <Route
+            path="/exoplanets"
+            element={
+              <Suspense fallback={<div className="flex-1 flex items-center justify-center text-gray-600 text-sm">Loading Exoplanet Explorer…</div>}>
+                <ExoplanetExplorer />
+              </Suspense>
+            }
+          />
         </Routes>
 
       <footer className="py-8 px-6 border-t border-white/5 bg-space-dark">

@@ -34,7 +34,7 @@ export function AsteroidTracker() {
 
   return (
     <>
-      <motion.div layout className="glass-panel rounded-xl overflow-hidden flex flex-col transition-all duration-500">
+      <motion.div className="glass-panel rounded-xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
           <div className="flex items-center gap-3">
@@ -64,7 +64,7 @@ export function AsteroidTracker() {
         </div>
 
         {/* Summary Table */}
-        <div className="overflow-x-auto flex-1 max-h-[250px]">
+        <div className="overflow-x-auto min-h-[220px] max-h-[320px] overflow-y-auto">
           {isLoading ? (
             <div className="p-2">
               {[...Array(4)].map((_, i) => <RowSkeleton key={i} />)}

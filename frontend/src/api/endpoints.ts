@@ -24,4 +24,9 @@ export const ENDPOINTS = {
   AI: {
     EXPLAIN: (type: string, id: string) => `/api/ai/explain?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`,
   },
+  EXOPLANETS: {
+    ALL: '/api/exoplanets',
+    DETAIL: (plName: string) => `/api/exoplanets/${encodeURIComponent(plName)}`,
+    INGEST: '/api/admin/exoplanets/ingest',
+  },
 } as const;

@@ -29,4 +29,13 @@ public class WebClientConfig {
                 .baseUrl(baseUrl)
                 .build();
     }
+
+    @Bean
+    public WebClient tapWebClient(
+            @Value("${app.exoplanets.tap-url:https://exoplanetarchive.ipac.caltech.edu/TAP/sync}") String tapUrl) {
+        return WebClient.builder()
+                .baseUrl(tapUrl)
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(16 * 1024 * 1024))
+                .build();
+    }
 }

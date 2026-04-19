@@ -52,12 +52,12 @@ React SPA
 
 | Component | Technology | Purpose |
 |-----------|-----------|---------|
-| **Frontend** | React 18 + TypeScript + Vite | All UI, calls Spring Boot API |
-| **Backend API** | Spring Boot 3 / Java 21 | REST endpoints, business logic |
+| **Frontend** | React 19 + TypeScript + Vite 8 | All UI, calls Spring Boot API |
+| **Backend API** | Spring Boot 4.1 / Java 21 | REST endpoints, business logic |
 | **Ingestion** | Spring Scheduler + WebClient | Scheduled NASA API pulls |
 | **Cache Layer** | Redis 7 | Cache-aside pattern, TTL-based invalidation |
 | **Database** | PostgreSQL 16 | Persistent storage for all space data |
-| **AI Service** | Gemini API | Plain-English event explanations |
+| **AI Service** | Google Gemini 2.5 Flash | Plain-English APOD, asteroid, and event explanations |
 | **Alerts** | AWS SES | Email notifications for space events |
 | **CI/CD** | GitHub Actions | Automated test → build → deploy |
 | **Monitoring** | CloudWatch + Prometheus | Metrics, logs, alarms |
@@ -67,7 +67,7 @@ React SPA
 ## Tech Stack Deep Dive
 
 ### Frontend
-- **React 18 + TypeScript + Vite** — Fast HMR, compile-time safety for orbital calculations
+- **React 19 + TypeScript + Vite 8** — Fast HMR, compile-time safety for orbital calculations
 - **Tailwind CSS** — Dark space theme, consistent spacing
 - **React Query (TanStack)** — Auto-refetch for live ISS position
 - **Three.js** — 3D asteroid orbit visualizer (~150 lines)
@@ -76,7 +76,7 @@ React SPA
 - **Leaflet.js** — Live ISS world map
 
 ### Backend
-- **Spring Boot 3 / Java 21** — Industry standard in Canada
+- **Spring Boot 4.1 / Java 21** — Industry standard in Canada
 - **Spring Scheduler** — Cron-based NASA API ingestion
 - **Spring WebClient** — Non-blocking concurrent API calls
 - **Spring Data JPA** — Repository pattern, idempotent writes
@@ -101,8 +101,8 @@ React SPA
 - **Docker** — Multi-stage builds for Spring Boot
 
 ### AI & APIs
-- **Anthropic Claude API** — Haiku model for event explanations (fast, cheap)
-- **8+ NASA APIs** — APOD, NeoWs, DONKI, Mars Rovers, ISS, EPIC, Exoplanet Archive
+- **Google Gemini 2.5 Flash** — AI explanations for APOD, asteroids, and solar events (24h cache)
+- **8+ NASA APIs** — APOD, NeoWs, DONKI, Mars Rovers, ISS, EPIC, Exoplanet Archive TAP API
 - **Open Notify API** — Live ISS position (no key required)
 
 
@@ -151,6 +151,7 @@ React SPA
 
 ### Exoplanets
 - `GET /api/exoplanets` — Full dataset (paginated, filterable)
+- `GET /api/exoplanets/{id}` — Single exoplanet detail
 
 ### AI
 - `GET /api/ai/explain?type={t}&id={id}` — Plain-English event explanation (24h cache)

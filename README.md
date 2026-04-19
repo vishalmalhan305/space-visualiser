@@ -2,6 +2,7 @@
 
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Gemini](https://img.shields.io/badge/Google_Gemini-2.5_Flash-4285F4?logo=google&logoColor=white)](https://ai.google.dev/)
 [![AWS](https://img.shields.io/badge/AWS-Fargate-232F3E?logo=amazon-aws&logoColor=white)](https://aws.amazon.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)](https://redis.io/)
@@ -11,7 +12,8 @@ A portfolio-grade NASA data platform that transforms raw astronomical data from 
 ## 🚀 Key Features
 
 - **Real-time Orbital Mechanics:** 3D asteroid orbit visualizer using Three.js and Keplerian elements.
-- **AI-Powered Insights:** Plain-language explanations of solar flares and space weather events via Anthropic Claude.
+- **AI-Powered Insights:** Plain-language explanations of APOD images, solar flares, and asteroid close approaches via Google Gemini 2.5 Flash.
+- **Exoplanet Explorer:** Interactive D3.js scatter plot of 5,500+ confirmed exoplanets from the NASA Exoplanet Archive, with detail panels and filtering.
 - **Mars Exploration Hub:** High-resolution photo gallery from Curiosity, Opportunity, and Spirit rovers with multi-point filtering.
 - **ISS Telemetry Mapping:** Live tracking of the International Space Station with global coordinate mapping.
 - **Space Weather Dashboard:** Interactive charts for solar activity and geomagnetic storm tracking.
@@ -23,7 +25,7 @@ A portfolio-grade NASA data platform that transforms raw astronomical data from 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **Framework:** React 19 + TypeScript + Vite 8
+- **Framework:** React 19 + TypeScript + Vite 8 (proxies `/api/*` to `:8080` in dev)
 - **Styling:** Tailwind CSS 4
 - **State & Data Fetching:** TanStack React Query (auto-refetching for live telemetry)
 - **Visualisation:** Three.js (3D Orbits), D3.js (Exoplanet scatter plots), Recharts (Time-series charts)
@@ -31,7 +33,7 @@ A portfolio-grade NASA data platform that transforms raw astronomical data from 
 - **Testing:** Vitest + React Testing Library
 
 ### Backend
-- **Framework:** Spring Boot 4.1.0-M4 (Java 21)
+- **Framework:** Spring Boot 4.1 (Java 21)
 - **Data Access:** Spring Data JPA + Hibernate
 - **Networking:** Spring WebClient (Non-blocking concurrent API calls)
 - **Rate Limiting:** Bucket4j (Token-bucket per IP)
@@ -54,7 +56,7 @@ Before you begin, ensure you have the following installed:
 - **Node.js 20+** (Required for frontend)
 - **Docker Desktop** (For PostgreSQL and Redis)
 - **NASA API Key** ([Get one here](https://api.nasa.gov/))
-- **Anthropic API Key** (Optional, for AI explanations)
+- **Google Gemini API Key** (Optional, for AI explanations — `GEMINI_API_KEY`)
 
 ---
 
@@ -130,7 +132,7 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `NASA_API_KEY` | Your NASA Open API Key | `DEMO_KEY` |
-| `ANTHROPIC_API_KEY` | API Key for Claude AI explanations | - |
+| `GEMINI_API_KEY` | Google Gemini API key for AI explanations | - |
 | `POSTGRES_PORT` | Host port for PostgreSQL | `5433` |
 | `REDIS_PORT` | Host port for Redis | `6379` |
 | `BACKEND_PORT` | Spring Boot application port | `8080` |

@@ -140,7 +140,7 @@ export function AsteroidDetailPage() {
                   disabled={isLoading}
                   aria-label="Start date"
                   onChange={e => { setStartDate(e.target.value); setPage(0); }}
-                  className="bg-transparent text-[10px] font-mono text-white border-none focus:ring-0 w-28 p-1 disabled:opacity-50"
+                  className="bg-transparent text-xs font-mono text-white border-none focus:ring-0 w-32 p-1 disabled:opacity-50"
                 />
                 <span className="text-gray-600 text-[10px]">→</span>
                 <input
@@ -150,7 +150,7 @@ export function AsteroidDetailPage() {
                   aria-label="End date"
                   aria-describedby={dateError ? 'date-error' : undefined}
                   onChange={e => { setEndDate(e.target.value); setPage(0); }}
-                  className="bg-transparent text-[10px] font-mono text-white border-none focus:ring-0 w-28 p-1 disabled:opacity-50"
+                  className="bg-transparent text-xs font-mono text-white border-none focus:ring-0 w-32 p-1 disabled:opacity-50"
                 />
               </div>
               <AnimatePresence>
