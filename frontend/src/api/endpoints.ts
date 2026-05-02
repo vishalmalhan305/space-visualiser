@@ -19,7 +19,7 @@ export const ENDPOINTS = {
     POSITION: '/api/iss/position', 
   },
   MARS: {
-    PHOTOS: (rover: string, camera: string, sol: number) => `/api/mars/photos?rover=${rover}&camera=${camera}&sol=${sol}`,
+    PHOTOS: (rover: string) => `/api/mars/photos?rover=${rover}`,
   },
   AI: {
     EXPLAIN: (type: string, id: string) => `/api/ai/explain?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`,

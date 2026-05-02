@@ -5,7 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.space.visualiser_api.entity.MarsPhoto;
 import com.space.visualiser_api.repository.MarsPhotoRepository;
-import com.space.visualiser_api.visualiser.dto.NasaMarsPhotoResponseDto;
+import com.space.visualiser_api.visualiser.dto.NasaImageLibraryResponseDto;
 import io.micrometer.core.instrument.Counter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,19 +22,18 @@ import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
 public class MarsService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MarsService.class);
+    private static final int MAX_PHOTOS = 50;
 
     private final MarsPhotoRepository marsPhotoRepository;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
-    private final WebClient nasaWebClient;
-    private final String nasaApiKey;
+    private final WebClient nasaImageWebClient;
     private final Duration cacheTtl;
     private final Counter cacheHitsCounter;
     private final Counter cacheMissesCounter;
@@ -43,8 +42,7 @@ public class MarsService {
             MarsPhotoRepository marsPhotoRepository,
             StringRedisTemplate redisTemplate,
             ObjectMapper objectMapper,
-            WebClient nasaWebClient,
-            @Value("${app.nasa.api-key:${NASA_API_KEY:DEMO_KEY}}") String nasaApiKey,
+            @Qualifier("nasaImageWebClient") WebClient nasaImageWebClient,
             @Qualifier("spaceCacheHitsCounter") Counter cacheHitsCounter,
             @Qualifier("spaceCacheMissesCounter") Counter cacheMissesCounter,
             @Value("${app.mars.cache-ttl:P7D}") Duration cacheTtl
@@ -52,20 +50,17 @@ public class MarsService {
         this.marsPhotoRepository = marsPhotoRepository;
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
-        this.nasaWebClient = nasaWebClient;
-        this.nasaApiKey = nasaApiKey;
+        this.nasaImageWebClient = nasaImageWebClient;
         this.cacheHitsCounter = cacheHitsCounter;
         this.cacheMissesCounter = cacheMissesCounter;
         this.cacheTtl = cacheTtl;
     }
 
-    public List<MarsPhoto> getPhotos(String rover, String camera, Integer sol) {
-        String safeRover = rover == null ? "" : rover.trim();
-        String safeCamera = normalizeCamera(camera);
+    public List<MarsPhoto> getPhotos(String rover) {
+        String safeRover = rover == null ? "" : rover.trim().toLowerCase(Locale.ROOT);
+        String cacheKey = "mars:photos:" + safeRover;
 
-        String cacheKey = buildCacheKey(safeRover, safeCamera, sol);
         List<MarsPhoto> cachedPhotos = readFromCache(cacheKey);
-
         if (cachedPhotos != null) {
             LOGGER.debug("Cache HIT for key {}", cacheKey);
             cacheHitsCounter.increment();
@@ -75,31 +70,14 @@ public class MarsService {
         LOGGER.debug("Cache MISS for key {}", cacheKey);
         cacheMissesCounter.increment();
 
-        List<MarsPhoto> dbPhotos = safeCamera == null
-                ? marsPhotoRepository.findByRoverIgnoreCaseAndSol(safeRover, sol)
-                : marsPhotoRepository.findByRoverIgnoreCaseAndCameraIgnoreCaseAndSol(safeRover, safeCamera, sol);
-
-        // If camera-specific filter has no match in DB, fall back to same rover+sol so users still
-        // get historical data during upstream outages or sparse camera coverage.
-        if (dbPhotos.isEmpty() && safeCamera != null) {
-            List<MarsPhoto> roverSolPhotos = marsPhotoRepository.findByRoverIgnoreCaseAndSol(safeRover, sol);
-            if (!roverSolPhotos.isEmpty()) {
-                LOGGER.info(
-                        "No camera-specific DB rows for rover {}, camera {}, sol {}. Falling back to rover+sol dataset.",
-                        safeRover, safeCamera, sol
-                );
-                dbPhotos = roverSolPhotos;
-            }
+        List<MarsPhoto> dbPhotos = marsPhotoRepository.findByRoverIgnoreCase(safeRover);
+        if (dbPhotos.size() > MAX_PHOTOS) {
+            dbPhotos = dbPhotos.subList(0, MAX_PHOTOS);
         }
 
         if (dbPhotos.isEmpty()) {
-            LOGGER.info("Mars photos missing in DB for rover {}, camera {}, sol {}. Fetching from NASA", safeRover, safeCamera, sol);
-            dbPhotos = fetchPhotosFromNasa(safeRover, safeCamera, sol);
-            
-            // Limit to 50 to avoid huge payloads and DB operations
-            if (dbPhotos.size() > 50) {
-                dbPhotos = dbPhotos.subList(0, 50);
-            }
+            LOGGER.info("Mars photos missing in DB for rover {}. Fetching from NASA Image Library", safeRover);
+            dbPhotos = fetchPhotosFromNasa(safeRover);
 
             if (!dbPhotos.isEmpty()) {
                 marsPhotoRepository.saveAll(dbPhotos);
@@ -110,50 +88,92 @@ public class MarsService {
         return dbPhotos;
     }
 
-    private List<MarsPhoto> fetchPhotosFromNasa(String rover, String camera, Integer sol) {
+    private List<MarsPhoto> fetchPhotosFromNasa(String rover) {
         try {
-            NasaMarsPhotoResponseDto response = nasaWebClient.get()
+            String query = rover + " mars rover";
+            NasaImageLibraryResponseDto response = nasaImageWebClient.get()
                     .uri(uriBuilder -> uriBuilder
-                            .path("/mars-photos/api/v1/rovers/{rover}/photos")
-                            .queryParam("sol", sol)
-                            .queryParam("api_key", nasaApiKey)
-                            .queryParamIfPresent("camera", java.util.Optional.ofNullable(camera))
-                            .build(rover))
+                            .path("/search")
+                            .queryParam("q", query)
+                            .queryParam("media_type", "image")
+                            .queryParam("page_size", MAX_PHOTOS)
+                            .build())
                     .retrieve()
-                    .bodyToMono(NasaMarsPhotoResponseDto.class)
+                    .bodyToMono(NasaImageLibraryResponseDto.class)
                     .timeout(Duration.ofSeconds(15))
                     .block();
 
-            if (response == null || response.getPhotos() == null) {
+            if (response == null
+                    || response.getCollection() == null
+                    || response.getCollection().getItems() == null) {
                 return Collections.emptyList();
             }
 
-            return response.getPhotos().stream().map(dto -> {
-                LocalDate earthDate;
-                try {
-                    earthDate = LocalDate.parse(dto.getEarthDate());
-                } catch (DateTimeParseException | NullPointerException e) {
-                    earthDate = LocalDate.now();
-                }
+            return response.getCollection().getItems().stream()
+                    .filter(item -> item.getData() != null && !item.getData().isEmpty())
+                    .filter(item -> item.getLinks() != null && !item.getLinks().isEmpty())
+                    .map(item -> {
+                        NasaImageLibraryResponseDto.ItemData data = item.getData().get(0);
+                        String imgSrc = item.getLinks().stream()
+                                .filter(link -> "preview".equals(link.getRel()))
+                                .map(NasaImageLibraryResponseDto.ItemLink::getHref)
+                                .findFirst()
+                                .orElse(item.getLinks().get(0).getHref());
 
-                return MarsPhoto.builder()
-                        .photoId(dto.getId())
-                        .rover(rover)
-                        .camera(resolveCamera(camera, dto.getCamera() == null ? null : dto.getCamera().getName()))
-                        .sol(dto.getSol() != null ? dto.getSol() : sol)
-                        .earthDate(earthDate)
-                        .imgSrc(dto.getImgSrc())
-                        .build();
-            }).filter(photo -> photo.getCamera() != null && !photo.getCamera().isBlank())
+                        LocalDate earthDate = parseDate(data.getDateCreated());
+                        long photoId = toPhotoId(data.getNasaId());
+
+                        String keywords = data.getKeywords() == null ? null
+                                : String.join(",", data.getKeywords());
+
+                        return MarsPhoto.builder()
+                                .photoId(photoId)
+                                .rover(rover)
+                                .camera(null)
+                                .sol(null)
+                                .earthDate(earthDate)
+                                .imgSrc(imgSrc)
+                                .title(data.getTitle())
+                                .description(data.getDescription())
+                                .keywords(keywords)
+                                .build();
+                    })
+                    .limit(MAX_PHOTOS)
                     .collect(Collectors.toList());
 
         } catch (WebClientResponseException exception) {
-            LOGGER.error("Failed to fetch Mars photos from NASA. Status: {}", exception.getStatusCode(), exception);
+            LOGGER.error(
+                    "Failed to fetch Mars photos from NASA Image Library. Status: {}",
+                    exception.getStatusCode(), exception);
             return Collections.emptyList();
         } catch (Exception exception) {
-            LOGGER.error("Error during NASA Mars Photos API call", exception);
+            LOGGER.error("Error during NASA Image Library API call", exception);
             return Collections.emptyList();
         }
+    }
+
+    private LocalDate parseDate(String dateCreated) {
+        if (dateCreated == null || dateCreated.isBlank()) {
+            return LocalDate.now();
+        }
+        try {
+            // NASA Image Library returns ISO-8601 datetime e.g. "2021-03-18T00:00:00Z"
+            return LocalDate.parse(dateCreated.substring(0, 10));
+        } catch (DateTimeParseException | IndexOutOfBoundsException e) {
+            return LocalDate.now();
+        }
+    }
+
+    private long toPhotoId(String nasaId) {
+        if (nasaId == null || nasaId.isBlank()) {
+            return Math.abs(System.nanoTime()) % 9007199254740991L;
+        }
+        long hash = 1125899906842597L;
+        for (char c : nasaId.toCharArray()) {
+            hash = 31L * hash + c;
+        }
+        // Cap to JS Number.MAX_SAFE_INTEGER (2^53 - 1) to avoid precision loss in JSON
+        return Math.abs(hash) % 9007199254740991L;
     }
 
     private List<MarsPhoto> readFromCache(String cacheKey) {
@@ -194,32 +214,5 @@ public class MarsService {
         } catch (RuntimeException exception) {
             LOGGER.warn("Redis delete failed for Mars cache key {}", cacheKey, exception);
         }
-    }
-
-    private String buildCacheKey(String rover, String camera, Integer sol) {
-        String cameraKey = camera == null ? "all" : camera;
-        String roverKey = rover == null ? "" : rover.trim().toLowerCase(Locale.ROOT);
-        return "mars:photos:" + roverKey + ":" + cameraKey + ":sol:" + sol;
-    }
-
-    private String normalizeCamera(String camera) {
-        if (camera == null) {
-            return null;
-        }
-        String normalized = camera.trim();
-        if (normalized.isEmpty() || Objects.equals(normalized, "all")) {
-            return null;
-        }
-        return normalized.toLowerCase(Locale.ROOT);
-    }
-
-    private String resolveCamera(String requestedCamera, String cameraFromNasa) {
-        if (requestedCamera != null && !requestedCamera.isBlank()) {
-            return requestedCamera;
-        }
-        if (cameraFromNasa == null || cameraFromNasa.isBlank()) {
-            return null;
-        }
-        return cameraFromNasa.toLowerCase(Locale.ROOT);
     }
 }

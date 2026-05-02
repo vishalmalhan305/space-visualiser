@@ -31,6 +31,14 @@ public class WebClientConfig {
     }
 
     @Bean
+    public WebClient nasaImageWebClient(
+            @Value("${app.nasa.image-base-url:https://images-api.nasa.gov}") String baseUrl) {
+        return WebClient.builder()
+                .baseUrl(baseUrl)
+                .build();
+    }
+
+    @Bean
     public WebClient tapWebClient(
             @Value("${app.exoplanets.tap-url:https://exoplanetarchive.ipac.caltech.edu/TAP/sync}") String tapUrl) {
         return WebClient.builder()

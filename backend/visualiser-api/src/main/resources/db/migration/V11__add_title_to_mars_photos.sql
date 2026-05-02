@@ -1,0 +1,1 @@
+ALTER TABLE mars_photos ADD COLUMN IF NOT EXISTS title TEXT;

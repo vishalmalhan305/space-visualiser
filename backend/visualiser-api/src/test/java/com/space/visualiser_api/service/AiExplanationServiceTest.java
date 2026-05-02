@@ -4,6 +4,7 @@ import com.space.visualiser_api.entity.AiExplanation;
 import com.space.visualiser_api.repository.AiExplanationRepository;
 import com.space.visualiser_api.repository.ApodRepository;
 import com.space.visualiser_api.repository.AsteroidRepository;
+import com.space.visualiser_api.repository.MarsPhotoRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +41,8 @@ class AiExplanationServiceTest {
     @Mock
     private ApodRepository apodRepository;
     @Mock
+    private MarsPhotoRepository marsPhotoRepository;
+    @Mock
     private AiExplanationRepository repository;
     @Mock
     private StringRedisTemplate redisTemplate;
@@ -56,6 +59,7 @@ class AiExplanationServiceTest {
                 repository,
                 asteroidRepository,
                 apodRepository,
+                marsPhotoRepository,
                 redisTemplate,
                 "test-api-key",
                 "gemini-2.5-flash",
@@ -113,7 +117,8 @@ class AiExplanationServiceTest {
     @Test
     void returnsFallbackMessageWhenApiKeyIsBlank() {
         service = new AiExplanationService(
-                geminiWebClient, repository, asteroidRepository, apodRepository, redisTemplate, "", "gemini-2.5-flash", Duration.ofHours(24));
+                geminiWebClient, repository, asteroidRepository, apodRepository,
+                marsPhotoRepository, redisTemplate, "", "gemini-2.5-flash", Duration.ofHours(24));
 
         when(valueOperations.get("ai:explain:CME:789")).thenReturn(null);
 
