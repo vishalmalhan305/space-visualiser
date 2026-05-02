@@ -4,6 +4,7 @@ import { useExoplanets } from '../hooks/useExoplanets';
 import { ExoplanetChart } from '../visualisers/ExoplanetChart';
 import { ExoplanetSidebar } from '../components/ExoplanetSidebar';
 import { ExoplanetDetailPanel } from '../components/ExoplanetDetailPanel';
+import { ExoplanetStatsBar } from '../components/ExoplanetStatsBar';
 import { api } from '../api/client';
 import { ENDPOINTS } from '../api/endpoints';
 
@@ -37,7 +38,6 @@ function CinematicLoader() {
 
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center bg-space-dark gap-6">
-      {/* Pulsing rings */}
       <div className="relative w-28 h-28 flex items-center justify-center">
         {[0, 1, 2].map((i) => (
           <motion.div
@@ -57,7 +57,6 @@ function CinematicLoader() {
         </motion.div>
       </div>
 
-      {/* Counter */}
       <div className="text-center">
         <motion.p className="text-3xl font-display font-bold text-electric-blue tabular-nums">
           {rounded}
@@ -67,7 +66,6 @@ function CinematicLoader() {
         </p>
       </div>
 
-      {/* Phase text */}
       <div className="h-5 flex items-center">
         <AnimatePresence mode="wait">
           <motion.p
@@ -83,10 +81,7 @@ function CinematicLoader() {
         </AnimatePresence>
       </div>
 
-      {/* Progress bar */}
-      <motion.div
-        className="w-48 h-px bg-white/10 rounded-full overflow-hidden"
-      >
+      <motion.div className="w-48 h-px bg-white/10 rounded-full overflow-hidden">
         <motion.div
           className="h-full bg-electric-blue rounded-full"
           initial={{ width: '0%' }}
@@ -133,6 +128,8 @@ export function ExoplanetExplorer() {
   const { data = [], isLoading, isError } = useExoplanets();
   const [activeMethods, setActiveMethods] = useState<Set<string>>(new Set());
   const [hoveredPlanet, setHoveredPlanet] = useState<string | null>(null);
+  const [selectedPlanet, setSelectedPlanet] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [ingesting, setIngesting] = useState(false);
   const [, startTransition] = useTransition();
 
@@ -186,6 +183,9 @@ export function ExoplanetExplorer() {
         )}
       </header>
 
+      {/* Stats bar */}
+      {data.length > 0 && <ExoplanetStatsBar planets={data} />}
+
       {/* Main three-column grid */}
       <div className="flex flex-1 min-h-0">
         {/* Left sidebar */}
@@ -196,6 +196,8 @@ export function ExoplanetExplorer() {
             onToggle={handleToggle}
             onIngest={handleIngest}
             ingesting={ingesting}
+            activeCategory={activeCategory}
+            onCategoryChange={setActiveCategory}
           />
         </div>
 
@@ -246,13 +248,16 @@ export function ExoplanetExplorer() {
               data={data}
               activeMethods={activeMethods}
               onHover={setHoveredPlanet}
+              onSelect={setSelectedPlanet}
+              selectedPlName={selectedPlanet}
+              activeCategory={activeCategory}
             />
           )}
         </div>
 
         {/* Right detail panel */}
         <div className="w-56 shrink-0 overflow-y-auto">
-          <ExoplanetDetailPanel plName={hoveredPlanet} />
+          <ExoplanetDetailPanel plName={selectedPlanet ?? hoveredPlanet} />
         </div>
       </div>
     </div>

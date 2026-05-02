@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import * as d3 from 'd3';
 import type { ExoplanetSummary } from '../types/exoplanet';
+import { CATEGORY_COLORS } from '../components/ExoplanetSidebar';
 
 const METHOD_COLORS: Record<string, string> = {
   Transit: '#b7c4ff',
@@ -14,15 +15,41 @@ const METHOD_COLORS: Record<string, string> = {
 
 const DEFAULT_COLOR = '#8d90a2';
 
+type CategoryPredicate = (p: ExoplanetSummary) => boolean;
+
+const CATEGORY_PREDICATES: Record<string, CategoryPredicate> = {
+  'Habitable Zone': (p) =>
+    p.plRade != null && p.plOrbper != null &&
+    p.plRade >= 0.7 && p.plRade <= 1.8 &&
+    p.plOrbper >= 100 && p.plOrbper <= 700,
+  'Earth-like': (p) =>
+    p.plRade != null && p.plRade >= 0.8 && p.plRade <= 1.25,
+  'Hot Jupiters': (p) =>
+    p.plRade != null && p.plOrbper != null &&
+    p.plRade > 8 && p.plOrbper < 10,
+  'Super-Earths': (p) =>
+    p.plRade != null && p.plRade > 1.25 && p.plRade <= 2.5,
+};
+
 interface Props {
   data: ExoplanetSummary[];
   activeMethods: Set<string>;
   onHover: (plName: string | null) => void;
+  onSelect?: (plName: string | null) => void;
+  selectedPlName?: string | null;
+  activeCategory?: string | null;
 }
 
 const MARGIN = { top: 20, right: 20, bottom: 50, left: 60 };
 
-export function ExoplanetChart({ data, activeMethods, onHover }: Props) {
+export function ExoplanetChart({
+  data,
+  activeMethods,
+  onHover,
+  onSelect,
+  selectedPlName,
+  activeCategory,
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -78,15 +105,47 @@ export function ExoplanetChart({ data, activeMethods, onHover }: Props) {
     const ctx = canvas.getContext('2d')!;
     ctx.clearRect(0, 0, width, height);
 
+    const predicate = activeCategory ? CATEGORY_PREDICATES[activeCategory] : null;
+
     for (const planet of filtered) {
       const cx = xScale(planet.plOrbper!) + MARGIN.left;
       const cy = yScale(planet.plRade!) + MARGIN.top;
-      const color = METHOD_COLORS[planet.discoverymethod ?? ''] ?? DEFAULT_COLOR;
+
+      let color: string;
+      let alpha: number;
+
+      if (predicate) {
+        const matches = predicate(planet);
+        color = matches ? CATEGORY_COLORS[activeCategory!] : '#3a3a4a';
+        alpha = matches ? 1.0 : 0.2;
+      } else {
+        color = METHOD_COLORS[planet.discoverymethod ?? ''] ?? DEFAULT_COLOR;
+        alpha = 0.8;
+      }
+
+      ctx.globalAlpha = alpha;
       ctx.beginPath();
       ctx.arc(cx, cy, 3, 0, Math.PI * 2);
-      ctx.fillStyle = color + 'cc';
+      ctx.fillStyle = color;
       ctx.fill();
     }
+
+    // Draw white ring around selected point
+    if (selectedPlName) {
+      const sel = filtered.find((d) => d.plName === selectedPlName);
+      if (sel) {
+        const cx = xScale(sel.plOrbper!) + MARGIN.left;
+        const cy = yScale(sel.plRade!) + MARGIN.top;
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    ctx.globalAlpha = 1;
 
     const svgD3 = d3.select(svg);
     svgD3.selectAll('*').remove();
@@ -94,12 +153,7 @@ export function ExoplanetChart({ data, activeMethods, onHover }: Props) {
 
     g.append('g')
       .attr('transform', `translate(0,${innerH})`)
-      .call(
-        d3
-          .axisBottom(xScale)
-          .ticks(6, '~s')
-          .tickSize(-innerH)
-      )
+      .call(d3.axisBottom(xScale).ticks(6, '~s').tickSize(-innerH))
       .call((ax) => {
         ax.select('.domain').remove();
         ax.selectAll('.tick line').attr('stroke', '#434656').attr('stroke-dasharray', '3,3');
@@ -130,7 +184,7 @@ export function ExoplanetChart({ data, activeMethods, onHover }: Props) {
       .attr('text-anchor', 'middle')
       .attr('font-size', 12)
       .text('Planet Radius (Earth Radii)');
-  }, [filtered]);
+  }, [filtered, activeCategory, selectedPlName]);
 
   useEffect(() => {
     draw();
@@ -152,13 +206,27 @@ export function ExoplanetChart({ data, activeMethods, onHover }: Props) {
     [onHover]
   );
 
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas || !quadtreeRef.current) return;
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      const nearest = quadtreeRef.current.find(mx, my, 12);
+      onSelect?.(nearest?.plName ?? null);
+    },
+    [onSelect]
+  );
+
   return (
     <div ref={containerRef} className="relative w-full h-full">
       <canvas
         ref={canvasRef}
-        className="absolute inset-0"
+        className="absolute inset-0 cursor-pointer"
         onMouseMove={handleMouseMove}
         onMouseLeave={() => onHover(null)}
+        onClick={handleClick}
       />
       <svg ref={svgRef} className="absolute inset-0 pointer-events-none" />
     </div>
