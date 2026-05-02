@@ -3,10 +3,12 @@ package com.space.visualiser_api.service;
 import com.space.visualiser_api.entity.AiExplanation;
 import com.space.visualiser_api.entity.ApodEntry;
 import com.space.visualiser_api.entity.Asteroid;
+import com.space.visualiser_api.entity.Exoplanet;
 import com.space.visualiser_api.entity.MarsPhoto;
 import com.space.visualiser_api.repository.AiExplanationRepository;
 import com.space.visualiser_api.repository.ApodRepository;
 import com.space.visualiser_api.repository.AsteroidRepository;
+import com.space.visualiser_api.repository.ExoplanetRepository;
 import com.space.visualiser_api.repository.MarsPhotoRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -40,6 +42,7 @@ public class AiExplanationService {
     private final AsteroidRepository asteroidRepository;
     private final ApodRepository apodRepository;
     private final MarsPhotoRepository marsPhotoRepository;
+    private final ExoplanetRepository exoplanetRepository;
     private final StringRedisTemplate redisTemplate;
     private final String apiKey;
     private final String model;
@@ -51,6 +54,7 @@ public class AiExplanationService {
             AsteroidRepository asteroidRepository,
             ApodRepository apodRepository,
             MarsPhotoRepository marsPhotoRepository,
+            ExoplanetRepository exoplanetRepository,
             StringRedisTemplate redisTemplate,
             @Value("${app.gemini.api-key:}") String apiKey,
             @Value("${app.gemini.model:gemini-2.5-flash}") String model,
@@ -60,6 +64,7 @@ public class AiExplanationService {
         this.asteroidRepository = asteroidRepository;
         this.apodRepository = apodRepository;
         this.marsPhotoRepository = marsPhotoRepository;
+        this.exoplanetRepository = exoplanetRepository;
         this.repository = repository;
         this.redisTemplate = redisTemplate;
         this.apiKey = apiKey;
@@ -209,6 +214,11 @@ public class AiExplanationService {
                 log.warn("Invalid Mars photo id: {}", eventId);
             }
         }
+        if ("exoplanet".equalsIgnoreCase(eventType)) {
+            return exoplanetRepository.findById(eventId)
+                    .map(this::buildExoplanetPrompt)
+                    .orElseGet(() -> buildGenericPrompt(eventType, eventId));
+        }
         return buildGenericPrompt(eventType, eventId);
     }
 
@@ -253,6 +263,27 @@ public class AiExplanationService {
                 + "Keep it accessible and inspiring for a general audience.",
                 photo.getRover(), photo.getEarthDate(),
                 photo.getRover(), photo.getEarthDate()
+        );
+    }
+
+    private String buildExoplanetPrompt(Exoplanet planet) {
+        return String.format(
+                "You are a science communicator helping the public understand exoplanet discovery. "
+                + "The exoplanet %s orbits the star %s with an orbital period of %.1f days "
+                + "and has a radius of %.2f times Earth's radius. "
+                + "It was discovered in %d using the %s method. "
+                + "Its host star has an effective temperature of %.0f K. "
+                + "In 2-3 engaging sentences, explain what makes this planet interesting, "
+                + "what its orbital period and size tell us about it, "
+                + "and how it compares to Earth or our solar system. "
+                + "Keep it accessible and inspiring for a general audience.",
+                planet.getPlName(),
+                planet.getHostname() != null ? planet.getHostname() : "an unknown star",
+                planet.getPlOrbper() != null ? planet.getPlOrbper() : 0.0,
+                planet.getPlRade() != null ? planet.getPlRade() : 0.0,
+                planet.getDiscYear() != null ? planet.getDiscYear() : 0,
+                planet.getDiscoverymethod() != null ? planet.getDiscoverymethod() : "unknown method",
+                planet.getStTeff() != null ? planet.getStTeff() : 0.0
         );
     }
 

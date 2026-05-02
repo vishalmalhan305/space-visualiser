@@ -1,9 +1,11 @@
 package com.space.visualiser_api.service;
 
 import com.space.visualiser_api.entity.AiExplanation;
+import com.space.visualiser_api.entity.Exoplanet;
 import com.space.visualiser_api.repository.AiExplanationRepository;
 import com.space.visualiser_api.repository.ApodRepository;
 import com.space.visualiser_api.repository.AsteroidRepository;
+import com.space.visualiser_api.repository.ExoplanetRepository;
 import com.space.visualiser_api.repository.MarsPhotoRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,6 +21,7 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -43,6 +46,8 @@ class AiExplanationServiceTest {
     @Mock
     private MarsPhotoRepository marsPhotoRepository;
     @Mock
+    private ExoplanetRepository exoplanetRepository;
+    @Mock
     private AiExplanationRepository repository;
     @Mock
     private StringRedisTemplate redisTemplate;
@@ -60,6 +65,7 @@ class AiExplanationServiceTest {
                 asteroidRepository,
                 apodRepository,
                 marsPhotoRepository,
+                exoplanetRepository,
                 redisTemplate,
                 "test-api-key",
                 "gemini-2.5-flash",
@@ -118,7 +124,8 @@ class AiExplanationServiceTest {
     void returnsFallbackMessageWhenApiKeyIsBlank() {
         service = new AiExplanationService(
                 geminiWebClient, repository, asteroidRepository, apodRepository,
-                marsPhotoRepository, redisTemplate, "", "gemini-2.5-flash", Duration.ofHours(24));
+                marsPhotoRepository, exoplanetRepository, redisTemplate, "", "gemini-2.5-flash",
+                Duration.ofHours(24));
 
         when(valueOperations.get("ai:explain:CME:789")).thenReturn(null);
 
@@ -143,5 +150,35 @@ class AiExplanationServiceTest {
 
         assertThat(result).isEqualTo("Explanation temporarily unavailable. Please try again later.");
         verifyNoInteractions(repository);
+    }
+
+    @Test
+    void buildsExoplanetPromptAndCallsGemini() {
+        Exoplanet planet = new Exoplanet();
+        planet.setPlName("Kepler-442b");
+        planet.setHostname("Kepler-442");
+        planet.setPlOrbper(112.3);
+        planet.setPlRade(1.34);
+        planet.setDiscYear(2015);
+        planet.setDiscoverymethod("Transit");
+        planet.setStTeff(4402.0);
+
+        when(valueOperations.get("ai:explain:exoplanet:Kepler-442b")).thenReturn(null);
+        when(exoplanetRepository.findById("Kepler-442b")).thenReturn(Optional.of(planet));
+
+        Map<String, Object> geminiResponse = Map.of(
+                "candidates", List.of(Map.of("content", Map.of(
+                        "parts", List.of(Map.of("text", "Kepler-442b is a super-Earth.")),
+                        "role", "model")))
+        );
+        when(geminiWebClient.post()).thenReturn(requestBodyUriSpec);
+        doReturn(requestBodySpec).when(requestBodyUriSpec).uri(anyString(), anyString(), anyString());
+        doReturn(requestBodySpec).when(requestBodySpec).bodyValue(any());
+        doReturn(responseSpec).when(requestBodySpec).retrieve();
+        doReturn(Mono.just(geminiResponse)).when(responseSpec).bodyToMono(Map.class);
+
+        String result = service.explain("exoplanet", "Kepler-442b");
+
+        assertThat(result).isEqualTo("Kepler-442b is a super-Earth.");
     }
 }
