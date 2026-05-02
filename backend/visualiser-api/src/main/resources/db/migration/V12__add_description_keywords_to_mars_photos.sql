@@ -1,0 +1,2 @@
+ALTER TABLE mars_photos ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE mars_photos ADD COLUMN IF NOT EXISTS keywords TEXT;

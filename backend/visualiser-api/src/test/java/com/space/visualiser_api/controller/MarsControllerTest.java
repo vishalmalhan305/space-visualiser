@@ -12,8 +12,9 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -28,21 +29,16 @@ class MarsControllerTest {
     private MarsService marsService;
 
     @Test
-    void getPhotos_WithValidParams_ReturnsPhotosList() throws Exception {
-        // Arrange
+    void getPhotos_WithValidRover_ReturnsPhotosList() throws Exception {
         MarsPhoto photo = new MarsPhoto();
         photo.setPhotoId(12345L);
         photo.setRover("curiosity");
-        photo.setImgSrc("http://nasa.gov/img.jpg");
-        
-        when(marsService.getPhotos(eq("curiosity"), eq("FHAZ"), eq(1000)))
-                .thenReturn(List.of(photo));
+        photo.setImgSrc("https://images-assets.nasa.gov/image/PIA12345/PIA12345~thumb.jpg");
 
-        // Act & Assert
+        when(marsService.getPhotos(eq("curiosity"))).thenReturn(List.of(photo));
+
         mockMvc.perform(get("/api/mars/photos")
                         .param("rover", "curiosity")
-                        .param("camera", "FHAZ")
-                        .param("sol", "1000")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].photoId").value(12345L))
@@ -50,21 +46,18 @@ class MarsControllerTest {
     }
 
     @Test
-    void getPhotos_MissingRequiredParam_ReturnsBadRequest() throws Exception {
+    void getPhotos_MissingRoverParam_ReturnsBadRequest() throws Exception {
         mockMvc.perform(get("/api/mars/photos")
-                        .param("rover", "curiosity")
-                        // missing sol
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void getPhotos_InvalidSol_ThrowsValidationException() throws Exception {
-        ServletException exception = org.junit.jupiter.api.Assertions.assertThrows(
+    void getPhotos_BlankRover_ThrowsValidationException() throws Exception {
+        ServletException exception = assertThrows(
                 ServletException.class,
                 () -> mockMvc.perform(get("/api/mars/photos")
-                                .param("rover", "curiosity")
-                                .param("sol", "-1")
+                                .param("rover", "   ")
                                 .contentType(MediaType.APPLICATION_JSON))
                         .andReturn()
         );

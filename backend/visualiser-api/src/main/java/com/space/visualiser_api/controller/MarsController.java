@@ -5,8 +5,6 @@ import com.space.visualiser_api.service.MarsService;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
@@ -38,12 +36,10 @@ public class MarsController {
     @GetMapping("/photos")
     public List<MarsPhoto> getPhotos(
             @RequestParam @NotBlank String rover,
-            @RequestParam(required = false) String camera,
-            @RequestParam @Min(0) @Max(10000) Integer sol,
             HttpServletRequest request
     ) {
         enforceRateLimit(request);
-        return marsService.getPhotos(rover, camera, sol);
+        return marsService.getPhotos(rover);
     }
 
     private void enforceRateLimit(HttpServletRequest request) {

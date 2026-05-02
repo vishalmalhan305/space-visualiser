@@ -5,7 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.space.visualiser_api.entity.MarsPhoto;
 import com.space.visualiser_api.repository.MarsPhotoRepository;
-import com.space.visualiser_api.visualiser.dto.NasaMarsPhotoResponseDto;
+import com.space.visualiser_api.visualiser.dto.NasaImageLibraryResponseDto;
 import io.micrometer.core.instrument.Counter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,7 +40,7 @@ class MarsServiceTest {
     @Mock
     private ObjectMapper objectMapper;
     @Mock
-    private WebClient nasaWebClient;
+    private WebClient nasaImageWebClient;
     @Mock
     private Counter cacheHitsCounter;
     @Mock
@@ -62,8 +62,7 @@ class MarsServiceTest {
                 marsPhotoRepository,
                 redisTemplate,
                 objectMapper,
-                nasaWebClient,
-                "TEST_KEY",
+                nasaImageWebClient,
                 cacheHitsCounter,
                 cacheMissesCounter,
                 Duration.ofDays(7)
@@ -72,114 +71,102 @@ class MarsServiceTest {
 
     @Test
     void getPhotos_CacheHit_ReturnsCachedList() throws JsonProcessingException {
-        // Arrange
         String rover = "curiosity";
-        String camera = "FHAZ";
-        Integer sol = 1000;
-        String cacheKey = "mars:photos:curiosity:fhaz:sol:1000";
+        String cacheKey = "mars:photos:curiosity";
         String cachedJson = "[{\"photoId\":123}]";
         List<MarsPhoto> expectedPhotos = List.of(new MarsPhoto());
 
         when(valueOperations.get(cacheKey)).thenReturn(cachedJson);
         when(objectMapper.readValue(eq(cachedJson), any(TypeReference.class))).thenReturn(expectedPhotos);
 
-        // Act
-        List<MarsPhoto> result = marsService.getPhotos(rover, camera, sol);
+        List<MarsPhoto> result = marsService.getPhotos(rover);
 
-        // Assert
         assertEquals(expectedPhotos, result);
         verify(cacheHitsCounter).increment();
-        verifyNoInteractions(marsPhotoRepository, nasaWebClient);
+        verifyNoInteractions(marsPhotoRepository, nasaImageWebClient);
     }
 
     @Test
     void getPhotos_CacheMiss_DbHit_ReturnsDbListAndCaches() throws JsonProcessingException {
-        // Arrange
         String rover = "curiosity";
-        String camera = "FHAZ";
-        Integer sol = 1000;
-        String cacheKey = "mars:photos:curiosity:fhaz:sol:1000";
+        String cacheKey = "mars:photos:curiosity";
         List<MarsPhoto> dbPhotos = List.of(new MarsPhoto());
 
         when(valueOperations.get(cacheKey)).thenReturn(null);
-        when(marsPhotoRepository.findByRoverIgnoreCaseAndCameraIgnoreCaseAndSol("curiosity", "fhaz", 1000)).thenReturn(dbPhotos);
+        when(marsPhotoRepository.findByRoverIgnoreCase("curiosity")).thenReturn(dbPhotos);
         when(objectMapper.writeValueAsString(dbPhotos)).thenReturn("[]");
 
-        // Act
-        List<MarsPhoto> result = marsService.getPhotos(rover, camera, sol);
+        List<MarsPhoto> result = marsService.getPhotos(rover);
 
-        // Assert
         assertEquals(dbPhotos, result);
         verify(cacheMissesCounter).increment();
         verify(valueOperations).set(eq(cacheKey), anyString(), eq(Duration.ofDays(7)));
-        verifyNoInteractions(nasaWebClient);
+        verifyNoInteractions(nasaImageWebClient);
     }
 
     @Test
     void getPhotos_CacheMiss_DbMiss_ApiFetchSuccess() throws JsonProcessingException {
-        // Arrange
         String rover = "curiosity";
-        String camera = "FHAZ";
-        Integer sol = 1000;
-        String cacheKey = "mars:photos:curiosity:fhaz:sol:1000";
+        String cacheKey = "mars:photos:curiosity";
 
         when(valueOperations.get(cacheKey)).thenReturn(null);
-        when(marsPhotoRepository.findByRoverIgnoreCaseAndCameraIgnoreCaseAndSol(anyString(), anyString(), anyInt()))
-                .thenReturn(Collections.emptyList());
-        when(marsPhotoRepository.findByRoverIgnoreCaseAndSol(anyString(), anyInt())).thenReturn(Collections.emptyList());
+        when(marsPhotoRepository.findByRoverIgnoreCase("curiosity")).thenReturn(Collections.emptyList());
 
-        // Mock WebClient chain
-        when(nasaWebClient.get()).thenReturn(requestHeadersUriSpec);
+        when(nasaImageWebClient.get()).thenReturn(requestHeadersUriSpec);
         when(requestHeadersUriSpec.uri(any(Function.class))).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-        
-        NasaMarsPhotoResponseDto responseDto = new NasaMarsPhotoResponseDto();
-        NasaMarsPhotoResponseDto.NasaMarsPhotoDto photoDto = new NasaMarsPhotoResponseDto.NasaMarsPhotoDto();
-        photoDto.setId(999L);
-        photoDto.setImgSrc("http://mars.com/img.jpg");
-        photoDto.setEarthDate("2021-01-01");
-        NasaMarsPhotoResponseDto.CameraDto cameraDto = new NasaMarsPhotoResponseDto.CameraDto();
-        cameraDto.setName("FHAZ");
-        photoDto.setCamera(cameraDto);
-        responseDto.setPhotos(List.of(photoDto));
 
-        when(responseSpec.bodyToMono(NasaMarsPhotoResponseDto.class)).thenReturn(Mono.just(responseDto));
+        NasaImageLibraryResponseDto responseDto = new NasaImageLibraryResponseDto();
+        NasaImageLibraryResponseDto.Collection collection = new NasaImageLibraryResponseDto.Collection();
+
+        NasaImageLibraryResponseDto.ItemData data = new NasaImageLibraryResponseDto.ItemData();
+        data.setNasaId("PIA12345");
+        data.setTitle("Curiosity Rover on Mars");
+        data.setDateCreated("2021-03-18T00:00:00Z");
+
+        NasaImageLibraryResponseDto.ItemLink link = new NasaImageLibraryResponseDto.ItemLink();
+        link.setHref("https://images-assets.nasa.gov/image/PIA12345/PIA12345~thumb.jpg");
+        link.setRel("preview");
+
+        NasaImageLibraryResponseDto.Item item = new NasaImageLibraryResponseDto.Item();
+        item.setData(List.of(data));
+        item.setLinks(List.of(link));
+
+        collection.setItems(List.of(item));
+        responseDto.setCollection(collection);
+
+        when(responseSpec.bodyToMono(NasaImageLibraryResponseDto.class)).thenReturn(Mono.just(responseDto));
         when(objectMapper.writeValueAsString(anyList())).thenReturn("[]");
 
-        // Act
-        List<MarsPhoto> result = marsService.getPhotos(rover, camera, sol);
+        List<MarsPhoto> result = marsService.getPhotos(rover);
 
-        // Assert
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals(999L, result.get(0).getPhotoId());
+        assertEquals("curiosity", result.get(0).getRover());
+        assertEquals("https://images-assets.nasa.gov/image/PIA12345/PIA12345~thumb.jpg",
+                result.get(0).getImgSrc());
         verify(marsPhotoRepository).saveAll(any());
         verify(valueOperations).set(eq(cacheKey), anyString(), any(Duration.class));
     }
 
     @Test
-    void getPhotos_CacheMiss_DbMiss_NasaFailure_ReturnsEmptyListInsteadOfThrowing() throws JsonProcessingException {
-        // Arrange
+    void getPhotos_CacheMiss_DbMiss_NasaFailure_ReturnsEmptyListInsteadOfThrowing()
+            throws JsonProcessingException {
         String rover = "curiosity";
-        String camera = "FHAZ";
-        Integer sol = 1000;
-        String cacheKey = "mars:photos:curiosity:fhaz:sol:1000";
+        String cacheKey = "mars:photos:curiosity";
 
         when(valueOperations.get(cacheKey)).thenReturn(null);
-        when(marsPhotoRepository.findByRoverIgnoreCaseAndCameraIgnoreCaseAndSol(anyString(), anyString(), anyInt()))
-                .thenReturn(Collections.emptyList());
-        when(marsPhotoRepository.findByRoverIgnoreCaseAndSol(anyString(), anyInt())).thenReturn(Collections.emptyList());
+        when(marsPhotoRepository.findByRoverIgnoreCase("curiosity")).thenReturn(Collections.emptyList());
 
-        // Mock WebClient chain with downstream outage
-        when(nasaWebClient.get()).thenReturn(requestHeadersUriSpec);
+        when(nasaImageWebClient.get()).thenReturn(requestHeadersUriSpec);
         when(requestHeadersUriSpec.uri(any(Function.class))).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(NasaMarsPhotoResponseDto.class))
-                .thenReturn(Mono.error(WebClientResponseException.create(503, "Service Unavailable", null, null, null)));
+        when(responseSpec.bodyToMono(NasaImageLibraryResponseDto.class))
+                .thenReturn(Mono.error(
+                        WebClientResponseException.create(503, "Service Unavailable", null, null, null)));
         when(objectMapper.writeValueAsString(Collections.emptyList())).thenReturn("[]");
 
-        // Act + Assert
-        List<MarsPhoto> result = assertDoesNotThrow(() -> marsService.getPhotos(rover, camera, sol));
+        List<MarsPhoto> result = assertDoesNotThrow(() -> marsService.getPhotos(rover));
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }

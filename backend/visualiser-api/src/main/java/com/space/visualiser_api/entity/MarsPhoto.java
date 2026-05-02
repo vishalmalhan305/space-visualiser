@@ -27,10 +27,10 @@ public class MarsPhoto {
     @Column(name = "rover", nullable = false, length = 50)
     private String rover;
 
-    @Column(name = "camera", nullable = false, length = 50)
+    @Column(name = "camera", length = 50)
     private String camera;
 
-    @Column(name = "sol", nullable = false)
+    @Column(name = "sol")
     private Integer sol;
 
     @Column(name = "earth_date", nullable = false)
@@ -38,6 +38,15 @@ public class MarsPhoto {
 
     @Column(name = "img_src", nullable = false, columnDefinition = "TEXT")
     private String imgSrc;
+
+    @Column(name = "title", columnDefinition = "TEXT")
+    private String title;
+
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "keywords", columnDefinition = "TEXT")
+    private String keywords;
 
     @Column(name = "fetched_at", nullable = false, insertable = false, updatable = false)
     private LocalDateTime fetchedAt;

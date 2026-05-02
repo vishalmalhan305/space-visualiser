@@ -6,15 +6,8 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-// [NEW] MarsPhotoRepository.java
 @Repository
 public interface MarsPhotoRepository extends JpaRepository<MarsPhoto, Long> {
 
-    /**
-     * Fetches photos based on specific rover, camera, and sol parameters.
-     * This query must be optimized with the composite index (rover, camera, sol).
-     */
-    List<MarsPhoto> findByRoverIgnoreCaseAndCameraIgnoreCaseAndSol(String rover, String camera, Integer sol);
-
-    List<MarsPhoto> findByRoverIgnoreCaseAndSol(String rover, Integer sol);
+    List<MarsPhoto> findByRoverIgnoreCase(String rover);
 }

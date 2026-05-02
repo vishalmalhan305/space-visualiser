@@ -3,9 +3,11 @@ package com.space.visualiser_api.service;
 import com.space.visualiser_api.entity.AiExplanation;
 import com.space.visualiser_api.entity.ApodEntry;
 import com.space.visualiser_api.entity.Asteroid;
+import com.space.visualiser_api.entity.MarsPhoto;
 import com.space.visualiser_api.repository.AiExplanationRepository;
 import com.space.visualiser_api.repository.ApodRepository;
 import com.space.visualiser_api.repository.AsteroidRepository;
+import com.space.visualiser_api.repository.MarsPhotoRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,6 +39,7 @@ public class AiExplanationService {
     private final AiExplanationRepository repository;
     private final AsteroidRepository asteroidRepository;
     private final ApodRepository apodRepository;
+    private final MarsPhotoRepository marsPhotoRepository;
     private final StringRedisTemplate redisTemplate;
     private final String apiKey;
     private final String model;
@@ -47,6 +50,7 @@ public class AiExplanationService {
             AiExplanationRepository repository,
             AsteroidRepository asteroidRepository,
             ApodRepository apodRepository,
+            MarsPhotoRepository marsPhotoRepository,
             StringRedisTemplate redisTemplate,
             @Value("${app.gemini.api-key:}") String apiKey,
             @Value("${app.gemini.model:gemini-2.5-flash}") String model,
@@ -55,6 +59,7 @@ public class AiExplanationService {
         this.geminiWebClient = geminiWebClient;
         this.asteroidRepository = asteroidRepository;
         this.apodRepository = apodRepository;
+        this.marsPhotoRepository = marsPhotoRepository;
         this.repository = repository;
         this.redisTemplate = redisTemplate;
         this.apiKey = apiKey;
@@ -194,6 +199,16 @@ public class AiExplanationService {
                 log.warn("Invalid APOD date id: {}", eventId);
             }
         }
+        if ("mars".equalsIgnoreCase(eventType)) {
+            try {
+                long photoId = Long.parseLong(eventId);
+                return marsPhotoRepository.findById(photoId)
+                        .map(this::buildMarsPrompt)
+                        .orElseGet(() -> buildGenericPrompt(eventType, eventId));
+            } catch (NumberFormatException ex) {
+                log.warn("Invalid Mars photo id: {}", eventId);
+            }
+        }
         return buildGenericPrompt(eventType, eventId);
     }
 
@@ -225,6 +240,19 @@ public class AiExplanationService {
                 a.getCloseApproachDate(), a.getMissDistanceKm() / 1_000_000.0,
                 a.getVelocity_kmh(),
                 a.isPotentiallyHazardous() ? "yes" : "no"
+        );
+    }
+
+    private String buildMarsPrompt(MarsPhoto photo) {
+        return String.format(
+                "You are a science communicator helping the public learn about Mars exploration. "
+                + "The %s Mars rover captured an image on %s. "
+                + "In 2-3 engaging sentences, explain: what the %s rover's mission goal is, "
+                + "what type of terrain or scientific targets it investigates at its landing site, "
+                + "and what this period of the mission (around %s) was focused on. "
+                + "Keep it accessible and inspiring for a general audience.",
+                photo.getRover(), photo.getEarthDate(),
+                photo.getRover(), photo.getEarthDate()
         );
     }
 
