@@ -10,15 +10,34 @@ const METHOD_COLORS: Record<string, string> = {
   'Orbital Brightness Modulation': '#c3f5ff',
 };
 
+export const CATEGORY_COLORS: Record<string, string> = {
+  'Habitable Zone': '#4ade80',
+  'Earth-like': '#00f0ff',
+  'Hot Jupiters': '#f97316',
+  'Super-Earths': '#a78bfa',
+};
+
+const CATEGORIES = Object.keys(CATEGORY_COLORS);
+
 interface Props {
   data: ExoplanetSummary[];
   activeMethods: Set<string>;
   onToggle: (method: string) => void;
   onIngest: () => void;
   ingesting: boolean;
+  activeCategory: string | null;
+  onCategoryChange: (c: string | null) => void;
 }
 
-export function ExoplanetSidebar({ data, activeMethods, onToggle, onIngest, ingesting }: Props) {
+export function ExoplanetSidebar({
+  data,
+  activeMethods,
+  onToggle,
+  onIngest,
+  ingesting,
+  activeCategory,
+  onCategoryChange,
+}: Props) {
   const methodCounts = data.reduce<Record<string, number>>((acc, d) => {
     const m = d.discoverymethod ?? 'Unknown';
     acc[m] = (acc[m] ?? 0) + 1;
@@ -57,6 +76,36 @@ export function ExoplanetSidebar({ data, activeMethods, onToggle, onIngest, inge
                 >
                   {count.toLocaleString()}
                 </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ borderTop: '1px solid #43465633', paddingTop: '1rem' }}>
+        <p className="text-xs uppercase tracking-widest mb-3" style={{ color: '#8d90a2' }}>
+          Categories
+        </p>
+        <div className="flex flex-col gap-1">
+          {CATEGORIES.map((cat) => {
+            const active = activeCategory === cat;
+            const color = CATEGORY_COLORS[cat];
+            return (
+              <button
+                key={cat}
+                onClick={() => onCategoryChange(active ? null : cat)}
+                className="flex items-center gap-2 px-3 py-2 rounded text-left text-xs transition-all"
+                style={{
+                  background: active ? color + '22' : 'transparent',
+                  border: `1px solid ${active ? color + '66' : '#434656'}`,
+                  color: active ? color : '#8d90a2',
+                }}
+              >
+                <span
+                  className="inline-block w-2 h-2 rounded-full shrink-0"
+                  style={{ background: color }}
+                />
+                {cat}
               </button>
             );
           })}
