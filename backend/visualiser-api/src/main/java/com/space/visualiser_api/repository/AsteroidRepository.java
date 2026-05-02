@@ -27,8 +27,8 @@ public interface AsteroidRepository extends JpaRepository<Asteroid, String> {
 
     @Query("SELECT a FROM Asteroid a WHERE " +
            "(:hazardous IS NULL OR a.potentiallyHazardous = :hazardous) AND " +
-           "(:start IS NULL OR a.closeApproachDate >= :start) AND " +
-           "(:end IS NULL OR a.closeApproachDate <= :end)")
+           "(cast(:start as date) IS NULL OR a.closeApproachDate >= :start) AND " +
+           "(cast(:end as date) IS NULL OR a.closeApproachDate <= :end)")
     Page<Asteroid> findWithFilters(
             @Param("hazardous") Boolean hazardous,
             @Param("start") LocalDate start,
