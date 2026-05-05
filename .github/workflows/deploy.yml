@@ -5,8 +5,8 @@ on:
     branches: [main]
 
 env:
-  AWS_REGION: us-east-1
-  ECR_REGISTRY: 435472314090.dkr.ecr.us-east-1.amazonaws.com
+  AWS_REGION: ca-central-1
+  ECR_REGISTRY: 435472314090.dkr.ecr.ca-central-1.amazonaws.com
   BACKEND_IMAGE_NAME: space-visualiser-api
   FRONTEND_IMAGE_NAME: space-visualiser-frontend
   ECS_CLUSTER: space-visualiser-cluster
@@ -80,3 +80,6 @@ jobs:
           service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
+          region: ${{ env.AWS_REGION }}
+          force-new-deployment: true
+          

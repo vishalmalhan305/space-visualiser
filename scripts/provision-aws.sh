@@ -13,9 +13,9 @@ set -euo pipefail
 #   - Update NASA_API_KEY in Secrets Manager before deploying
 #   - Database password is generated on first run and stored in Secrets Manager immediately
 
-REGION="us-east-1"
+REGION="ca-central-1"
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-CLUSTER_NAME="space-visualiser"
+CLUSTER_NAME="space-visualiser-cluster"
 BACKEND_REPO="space-visualiser-api"
 FRONTEND_REPO="space-visualiser-frontend"
 DB_INSTANCE_ID="space-visualiser-db"
@@ -106,7 +106,7 @@ else
         --cache-cluster-id "$REDIS_ID" \
         --cache-node-type cache.t3.micro \
         --engine redis \
-        --engine-version "7" \
+        --engine-version "7.0" \
         --num-cache-nodes 1 \
         --region "$REGION" > /dev/null
     echo "  [OK] Created ElastiCache Redis cluster"
@@ -192,7 +192,7 @@ else
     aws logs put-retention-policy \
         --log-group-name "$LOG_GROUP" \
         --retention-in-days 30 \
-        --region "$REGION" > /dev/null
+        --region "$REGION" > /dev/null || true
     echo "  [OK] Created log group $LOG_GROUP (retention: 30 days)"
 fi
 echo ""

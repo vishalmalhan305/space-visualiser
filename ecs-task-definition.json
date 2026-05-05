@@ -56,7 +56,7 @@
         "logDriver": "awslogs",
         "options": {
           "awslogs-group": "/ecs/space-visualiser",
-          "awslogs-region": "us-east-1",
+          "awslogs-region": "ca-central-1",
           "awslogs-stream-prefix": "backend",
           "awslogs-create-group": "true"
         }
@@ -84,7 +84,7 @@
         "logDriver": "awslogs",
         "options": {
           "awslogs-group": "/ecs/space-visualiser",
-          "awslogs-region": "us-east-1",
+          "awslogs-region": "ca-central-1",
           "awslogs-stream-prefix": "frontend",
           "awslogs-create-group": "true"
         }
