@@ -21,14 +21,14 @@ export function ExoplanetStatsBar({ planets }: Props) {
 
   return (
     <div
-      className="flex items-center gap-3 px-6 py-2 shrink-0"
+      className="flex items-center gap-3 px-4 sm:px-6 py-2 min-w-max"
       style={{ borderBottom: '1px solid #43465633', background: '#1c1b1b' }}
     >
-      <StatChip label="Confirmed Planets" value={planets.length.toLocaleString()} />
+      <StatChip label="Confirmed" value={planets.length.toLocaleString()} />
       <div className="w-px h-4" style={{ background: '#43465666' }} />
       <StatChip label="Top Method" value={topMethod ?? '—'} />
       <div className="w-px h-4" style={{ background: '#43465666' }} />
-      <StatChip label="Peak Discovery Year" value={peakYear?.toString() ?? '—'} />
+      <StatChip label="Peak Year" value={peakYear?.toString() ?? '—'} />
     </div>
   );
 }

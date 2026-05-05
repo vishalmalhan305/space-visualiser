@@ -1,73 +1,57 @@
-# React + TypeScript + Vite
+# Space Data Visualiser — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + TypeScript SPA built with Vite 8. Renders NASA data from the Spring Boot API at `localhost:8080` via a Vite dev proxy.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+| Layer | Library |
+|-------|---------|
+| Framework | React 19 + TypeScript (strict) |
+| Build | Vite 8 |
+| Styling | Tailwind CSS 4 |
+| Server state | TanStack React Query v5 |
+| Animations | Framer Motion |
+| Notifications | Sonner |
+| 3D | Three.js (`OrbitVisualiser`) |
+| Charts | D3.js (`ExoplanetChart`), Recharts (solar time series) |
+| Maps | Leaflet.js (`IssTracker`) |
+| Testing | Vitest + React Testing Library |
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev        # Vite dev server on :5173, proxies /api/* to :8080
+npm run build      # TypeScript check + production build
+npm run test       # Vitest
+npm run lint       # ESLint
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Routes
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Path | Page |
+|------|------|
+| `/` | Dashboard — APOD hero, asteroid tracker, ISS map, solar weather |
+| `/asteroids` | NEO Ledger — paginated, sortable, filterable asteroid table |
+| `/mars` | Mars Gallery — masonry photo grid with rover/camera/sol filters |
+| `/solar` | Solar Mission — solar event timeline and Recharts charts |
+| `/exoplanets` | Exoplanet Explorer — D3.js scatter plot with AI briefing panel |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/api/endpoints.ts` | Single source of truth for all API endpoint strings |
+| `src/api/client.ts` | Axios instance (base URL from `VITE_API_BASE_URL` or proxy) |
+| `src/types/` | TypeScript interfaces for all API responses — no `any` types |
+| `src/hooks/` | React Query hooks wrapping each endpoint |
+| `src/visualisers/` | D3.js and Three.js canvas components |
+
+## Environment
+
+```bash
+# Optional — only needed for production builds pointing at a remote API
+VITE_API_BASE_URL=https://your-api.example.com
 ```
+
+In development the Vite proxy handles `/api/*` → `http://localhost:8080` automatically.

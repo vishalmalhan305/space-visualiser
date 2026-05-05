@@ -27,6 +27,8 @@ const cardVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.215, 0.61, 0.355, 1] } },
 };
 
+const SKELETON_HEIGHTS = Array.from({ length: 12 }, () => Math.max(200, Math.random() * 400));
+
 export const MarsMasonryGrid: React.FC<Props> = ({
   photos,
   isLoading,
@@ -40,7 +42,7 @@ export const MarsMasonryGrid: React.FC<Props> = ({
           <div
             key={i}
             className="break-inside-avoid rounded-xl bg-white/5 animate-pulse-subtle border border-white/5"
-            style={{ height: `${Math.max(200, Math.random() * 400)}px` }}
+            style={{ height: `${SKELETON_HEIGHTS[i]}px` }}
           />
         ))}
       </div>

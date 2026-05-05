@@ -88,7 +88,7 @@ export function Navbar() {
               onClick={handleNavClick(l.href)}
               whileHover={{ y: -1 }}
               transition={{ duration: 0.18, ease: [0.215, 0.61, 0.355, 1] }}
-              className={`relative px-2 py-2 text-sm font-mono rounded-md tracking-[0.08em] ${
+              className={`relative px-2 py-2 text-sm font-mono rounded-md tracking-[0.08em] focus-visible:outline focus-visible:outline-2 focus-visible:outline-electric-blue ${
                 isActive(l.href)
                   ? 'text-electric-blue text-glow'
                   : 'text-gray-300 hover:text-white hover:bg-white/5'
@@ -110,9 +110,10 @@ export function Navbar() {
 
         {/* Mobile hamburger */}
         <button
-          className="md:hidden p-2 text-gray-400 hover:text-white"
+          className="md:hidden p-2 text-gray-400 hover:text-white cursor-pointer rounded-md transition-colors"
           onClick={() => setMobileOpen((o) => !o)}
           aria-label="Toggle menu"
+          aria-expanded={mobileOpen}
         >
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>

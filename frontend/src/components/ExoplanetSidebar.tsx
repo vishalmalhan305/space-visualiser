@@ -1,4 +1,5 @@
 import type { ExoplanetSummary } from '../types/exoplanet';
+import { CATEGORY_COLORS } from '../constants/exoplanet';
 
 const METHOD_COLORS: Record<string, string> = {
   Transit: '#b7c4ff',
@@ -8,13 +9,6 @@ const METHOD_COLORS: Record<string, string> = {
   Astrometry: '#dfe3ff',
   'Transit Timing Variations': '#a0c4ff',
   'Orbital Brightness Modulation': '#c3f5ff',
-};
-
-export const CATEGORY_COLORS: Record<string, string> = {
-  'Habitable Zone': '#4ade80',
-  'Earth-like': '#00f0ff',
-  'Hot Jupiters': '#f97316',
-  'Super-Earths': '#a78bfa',
 };
 
 const CATEGORIES = Object.keys(CATEGORY_COLORS);

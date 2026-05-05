@@ -4,46 +4,46 @@
 
 ## Project Identity
 
-**What is this?**  
-A full-stack NASA data platform that transforms raw space data from 8+ NASA APIs into beautiful, interactive experiences. Users explore real-time asteroid close approaches, solar flares, Mars rover photos, ISS positioning, and exoplanets through 3D visualizations, interactive charts, and AI-generated plain-language explanations.
+**What is this?**
+A full-stack NASA data platform that transforms raw space data from 8+ NASA APIs into interactive experiences. Users explore real-time asteroid close approaches, solar flares, Mars rover photos, ISS positioning, and exoplanets through 3D visualizations, interactive charts, and AI-generated plain-language explanations.
 
-**Why does it exist?**  
-This is a **portfolio-grade demonstration project** for a Canadian full-stack developer role. It showcases:
+**Why does it exist?**
+This is a **portfolio-grade demonstration project** showcasing:
 - Data engineering (scheduled ingestion pipelines)
 - Cloud architecture (AWS ECS + RDS + ElastiCache)
 - Caching strategies (Redis cache-aside pattern)
-- AI integration (Claude/OpenAI API for event explanations)
+- AI integration (Google Gemini 2.5 Flash)
 - 3D visualization (Three.js orbital mechanics)
-- Production practices (CI/CD, monitoring, rate limiting, IaC)
+- Production practices (CI/CD, monitoring, rate limiting)
 
 **Who is it for?**
 1. **Primary:** Hiring managers and technical interviewers at Canadian tech companies (Shopify, Wealthsimple, FreshBooks, etc.)
-2. **Secondary:** Space enthusiasts and curious users who want to explore NASA data interactively
+2. **Secondary:** Space enthusiasts who want to explore NASA data interactively
 
 ---
 
 ## Architecture at a Glance
 
 ### System Design Pattern
-**Layered monolith** with separate SPA frontend. Deliberately NOT microservices at this scale — easier to deploy, debug, and demonstrate in interviews.
+**Layered monolith** with separate SPA frontend. Deliberately NOT microservices — easier to deploy, debug, and demonstrate in interviews.
 
 ### Two Core Data Flows
 
 **1. Scheduled Ingestion Pipeline (background)**
 ```
-Spring Scheduler (cron) 
+Spring Scheduler (cron)
   → WebClient (non-blocking NASA API calls)
-  → JSON deserialization 
-  → Data normalization 
-  → JPA repository 
+  → JSON/CSV deserialization
+  → Data normalization
+  → JPA repository (idempotent upsert)
   → PostgreSQL
 ```
 
 **2. Request-Response Flow (user-facing)**
 ```
-React SPA 
-  → Spring Boot REST controller 
-  → Redis cache check 
+React SPA
+  → Spring Boot REST controller
+  → Redis cache check
     → CACHE HIT: return immediately (<5ms)
     → CACHE MISS: query PostgreSQL → cache result → return
 ```
@@ -57,21 +57,22 @@ React SPA
 | **Ingestion** | Spring Scheduler + WebClient | Scheduled NASA API pulls |
 | **Cache Layer** | Redis 7 | Cache-aside pattern, TTL-based invalidation |
 | **Database** | PostgreSQL 16 | Persistent storage for all space data |
-| **AI Service** | Google Gemini 2.5 Flash | Plain-English APOD, asteroid, and event explanations |
-| **Alerts** | AWS SES | Email notifications for space events |
+| **AI Service** | Google Gemini 2.5 Flash | Plain-English explanations for APOD, asteroids, solar events, exoplanets |
 | **CI/CD** | GitHub Actions | Automated test → build → deploy |
-| **Monitoring** | CloudWatch + Prometheus | Metrics, logs, alarms |
+| **Monitoring** | Prometheus (Micrometer) + CloudWatch | Metrics, logs, alarms |
 
 ---
 
 ## Tech Stack Deep Dive
 
 ### Frontend
-- **React 19 + TypeScript + Vite 8** — Fast HMR, compile-time safety for orbital calculations
-- **Tailwind CSS** — Dark space theme, consistent spacing
-- **React Query (TanStack)** — Auto-refetch for live ISS position
-- **Three.js** — 3D asteroid orbit visualizer (~150 lines)
-- **D3.js** — Exoplanet scatter plot (5,500+ planets)
+- **React 19 + TypeScript + Vite 8** — Fast HMR, compile-time safety
+- **Tailwind CSS 4** — Dark space theme, consistent spacing
+- **TanStack React Query v5** — Server state, auto-refetch for live ISS position
+- **Framer Motion** — Cinematic page transitions, scroll reveals, animated loaders
+- **Sonner** — Toast notifications (e.g. AI explanation loaded, copy-to-clipboard)
+- **Three.js** — 3D asteroid orbit visualizer
+- **D3.js** — Exoplanet scatter plot (5,500+ planets, filterable by discovery method)
 - **Recharts** — Historical solar activity time series
 - **Leaflet.js** — Live ISS world map
 
@@ -80,238 +81,211 @@ React SPA
 - **Spring Scheduler** — Cron-based NASA API ingestion
 - **Spring WebClient** — Non-blocking concurrent API calls
 - **Spring Data JPA** — Repository pattern, idempotent writes
-- **Spring Security** — JWT, OAuth, rate limiting
 - **Bucket4j** — Token-bucket rate limiter (100 req/min per IP)
-- **Flyway** — Versioned schema migrations
+- **Flyway** — Versioned schema migrations (V1–V12)
 
 ### Data Layer
 - **PostgreSQL 16** — ACID guarantees, date-range queries, indexing
 - **Redis 7** — Sub-millisecond cache, TTL support (5s for ISS, 24h for APOD)
-- **Flyway migrations** — Schema versioning from V1__create_apod.sql onward
 
 ### Cloud & DevOps
 - **AWS ECS Fargate** — Containerized Spring Boot, stateless design
 - **AWS RDS** — Managed PostgreSQL (t3.micro, automated backups)
 - **AWS ElastiCache** — Managed Redis (t3.micro)
-- **AWS SES** — Email alerts ($0.10/1,000 emails)
-- **AWS Secrets Manager** — API keys (NASA, Claude)
 - **AWS CloudWatch** — Logs, metrics, alarms for ingestion failures
-- **Vercel** — React SPA hosting (zero-config deployment)
+- **Vercel** — React SPA hosting
 - **GitHub Actions** — CI/CD pipeline (PR checks → Docker build → ECS deploy)
 - **Docker** — Multi-stage builds for Spring Boot
 
 ### AI & APIs
-- **Google Gemini 2.5 Flash** — AI explanations for APOD, asteroids, and solar events (24h cache)
-- **8+ NASA APIs** — APOD, NeoWs, DONKI, Mars Rovers, ISS, EPIC, Exoplanet Archive TAP API
-- **Open Notify API** — Live ISS position (no key required)
-
-
-## Redis Cache Key Design
-
-**The caching detail interviewers probe most.** Cache keys are hierarchical and deterministic — same request always produces same key.
-
-| Cache Key | TTL | Rationale |
-|-----------|-----|-----------|
-| `apod:{date}` | 24h | APOD updates once daily; yesterday's entry never changes |
-| `asteroids:week:{year}-W{week}` | 6h | New NEO data arrives daily; short TTL ensures freshness |
-| `weather:events:{date}` | 6h | DONKI events ingested every 6h; TTL matches cadence |
-| `iss:position` | 5s | ISS moves continuously; cache reduces calls but stays nearly live |
-| `mars:photos:{rover}:{camera}:sol:{sol}` | 7 days | Historical photos never change once published |
-| `ai:explain:{event_type}:{event_id}` | 24h | Same flare shouldn't re-cost an LLM API call |
-| `exoplanets:all` | 12h | Dataset updated infrequently; long TTL acceptable |
-
-**Cache-aside pattern:** Check Redis first → if HIT return immediately → if MISS query PostgreSQL → store in Redis → return.
+- **Google Gemini 2.5 Flash** — AI explanations for APOD, asteroids, solar events, and exoplanets (24h cache)
+- **8+ NASA APIs** — APOD, NeoWs, DONKI, Mars Rovers, ISS, Exoplanet Archive TAP API
 
 ---
 
-## REST API Endpoints
+## Frontend Structure
 
-### APOD
+### Pages & Routes
+
+| Route | Component | Description |
+|-------|-----------|-------------|
+| `/` | `Dashboard` (inline in App.tsx) | APOD hero, live intel grid (asteroids/solar/ISS), APOD archive |
+| `/asteroids` | `AsteroidDetailPage` | Paginated NEO ledger: sort, filter, date range, hazard toggle, 3D orbit modal |
+| `/mars` | `MarsPhotosPage` | Masonry photo gallery (Curiosity/Opportunity/Spirit), filters, detail panel |
+| `/solar` | `SolarMissionPage` | Solar event timeline, Recharts activity charts |
+| `/exoplanets` | `ExoplanetExplorer` (lazy-loaded) | D3.js scatter plot, stats bar, category highlights, detail panel with AI briefing |
+
+### Component Tree
+
+```
+src/components/
+├── apod/
+│   ├── ApodHero.tsx           — Today's APOD with AI explanation
+│   ├── ApodArchive.tsx        — Scrollable APOD history grid
+│   └── ApodSkeleton.tsx       — Loading placeholder
+├── dashboard/
+│   ├── AsteroidTracker.tsx    — Weekly NEO summary table
+│   ├── IssTracker.tsx         — Live ISS map (Leaflet)
+│   ├── OrbitModal.tsx         — Three.js 3D orbit renderer (modal)
+│   ├── SolarWeatherWidget.tsx — Recent solar event summary
+│   └── StatusBar.tsx          — Live system status bar
+├── mars/
+│   ├── MarsFilters.tsx        — Rover/camera/sol filter controls
+│   ├── MarsMasonryGrid.tsx    — CSS masonry photo layout
+│   ├── MarsMissionBanner.tsx  — Rover mission header banner
+│   └── MarsPhotoDetailPanel.tsx — Slide-in photo detail view
+├── layout/
+│   ├── Navbar.tsx             — Top navigation with route links
+│   └── Reveal.tsx             — Framer Motion scroll-reveal wrapper
+├── ExoplanetDetailPanel.tsx   — Slide-in exoplanet detail with AI briefing
+├── ExoplanetSidebar.tsx       — Filter/legend sidebar for scatter plot
+└── ExoplanetStatsBar.tsx      — Aggregate stats (count, avg radius, etc.)
+
+src/visualisers/
+├── ExoplanetChart.tsx         — D3.js scatter plot (orbital period vs. radius)
+└── OrbitVisualiser.tsx        — Three.js Keplerian orbit renderer
+```
+
+### Hooks
+
+| Hook | Endpoint | Notes |
+|------|----------|-------|
+| `useApod` | `/api/apod/today`, `/api/apod/archive` | Fetches today's and archive APOD |
+| `useAsteroids` | `/api/asteroids/week` | Weekly NEO summary |
+| `useAsteroidsPaginated` | `/api/asteroids/page` | Paginated ledger with sort/filter params |
+| `useIssPosition` | `/api/iss/position` | Refetches every 5s |
+| `useWeather` | `/api/weather/recent` | Recent solar events |
+| `useWeatherPaginated` | `/api/weather/page` | Paginated solar event history |
+| `useMarsPhotos` | `/api/mars/photos` | Filtered by rover param |
+| `useExoplanets` | `/api/exoplanets` | Full dataset (fetched once, cached 12h) |
+| `useExoplanetDetail` | `/api/exoplanets/{plName}` | Single exoplanet detail |
+| `useAiExplain` | `/api/ai/explain` | AI explanation (type + id param) |
+
+---
+
+## Backend Structure
+
+### Ingestion Jobs
+
+| Job | Cron | Data |
+|-----|------|------|
+| `NeoWsIngestionJob` | `0 10 0 * * *` | Asteroid close approaches (7-day window) |
+| `ApodIngestionJob` | `0 5 0 * * *` | Astronomy Picture of the Day |
+| `DonkiIngestionJob` | `0 0 */6 * * *` | Solar events (flares, geomagnetic storms) |
+| `ExoplanetCsvIngestionJob` | On-demand | 5,500+ exoplanets via NASA TAP API (CSV) |
+| `NeoWsStartupSeeder` | On startup | Seeds 30-day asteroid backfill if DB empty |
+| `ApodStartupSeeder` | On startup | Seeds recent APOD entries if DB empty |
+
+### Database Schema (Flyway Migrations)
+
+| Migration | Table / Change |
+|-----------|----------------|
+| V1 | `apod_entries` |
+| V2 | `asteroids` |
+| V3 | `space_weather_events` |
+| V4 | `ingestion_sync_state` |
+| V5 | `mars_photos` |
+| V6 | Composite index on asteroids |
+| V7 | Orbital elements columns on asteroids |
+| V8 | `ai_explanations` |
+| V9 | `exoplanets` |
+| V10 | Nullable camera/sol on mars_photos |
+| V11 | `title` column on mars_photos |
+| V12 | `description`, `keywords` columns on mars_photos |
+
+### REST API Endpoints
+
+**APOD**
 - `GET /api/apod/today` — Today's APOD
 - `GET /api/apod?date={date}` — Specific date
 - `GET /api/apod/range?start={date}&end={date}` — Date range
+- `GET /api/apod/archive?count={n}` — Recent N entries
 
-### Asteroids
+**Asteroids**
 - `GET /api/asteroids/week` — Current 7-day window
 - `GET /api/asteroids/{neoId}` — Single asteroid details
 - `GET /api/asteroids/{neoId}/orbit` — 3D orbital elements for Three.js
+- `GET /api/asteroids/page` — Paginated, sortable, filterable ledger
 
-### Space Weather
+**Space Weather**
 - `GET /api/weather/recent?days={n}` — Last N days of events
-- `GET /api/weather/stats/monthly` — Historical chart data (2015–present)
+- `GET /api/weather/page` — Paginated event history
 
-### Mars
+**Mars**
 - `GET /api/mars/photos?rover={r}&camera={c}&sol={s}` — Filterable photo gallery
 
-### ISS
+**ISS**
 - `GET /api/iss/position` — Live lat/lng (5s cache)
 
-### Earth
-- `GET /api/earth/images?date={date}` — EPIC full-disc Earth images
+**Exoplanets**
+- `GET /api/exoplanets` — Full dataset (12h cache)
+- `GET /api/exoplanets/{plName}` — Single exoplanet detail
+- `POST /api/admin/exoplanets/ingest` — Trigger CSV ingestion
 
-### Exoplanets
-- `GET /api/exoplanets` — Full dataset (paginated, filterable)
-- `GET /api/exoplanets/{id}` — Single exoplanet detail
+**AI**
+- `GET /api/ai/explain?type={t}&id={id}` — AI explanation (24h cache)
+  - `type=asteroid` — fetches Asteroid by neoId, builds orbital data prompt
+  - `type=apod` — fetches ApodEntry by date, includes title and NASA explanation
+  - `type=exoplanet` — fetches Exoplanet by name, includes radius, mass, orbital period, host star
+  - Other types — generic fallback prompt
 
-### AI
-- `GET /api/ai/explain?type={t}&id={id}` — Plain-English event explanation (24h cache)
-
-### Alerts
-- `POST /api/alerts/subscribe` — Email + alert_type + threshold
-- `DELETE /api/alerts/unsubscribe?token={t}` — One-click unsubscribe
-
-### Actuator (Monitoring)
-- `GET /actuator/health` — ECS target group health probe
-- `GET /actuator/metrics` — Micrometer metrics
+**Actuator**
+- `GET /actuator/health` — ECS health probe
 - `GET /actuator/prometheus` — Prometheus scrape endpoint
 
-### API Docs
-- `GET /swagger-ui.html` — Auto-generated OpenAPI docs
-
 ---
 
-## Key Design Decisions
+## Redis Cache Key Design
 
-### Why a scheduled pull architecture over webhooks?
-NASA doesn't offer webhooks. Pull architecture means designing for eventual consistency and TTL-based cache invalidation. **Interview talking point:** "I designed for a world where the data source doesn't notify me — this meant thinking carefully about cache expiry and stale data tolerance."
+| Cache Key | TTL | Rationale |
+|-----------|-----|-----------|
+| `apod:{date}` | 24h | APOD updates once daily |
+| `asteroids:week:{year}-W{week}` | 6h | New NEO data arrives daily |
+| `weather:events:{date}` | 6h | DONKI events ingested every 6h |
+| `iss:position` | 5s | ISS moves continuously |
+| `mars:photos:{rover}:{camera}:sol:{sol}` | 7 days | Historical photos never change |
+| `ai:explain:{event_type}:{event_id}` | 24h | Same entity shouldn't re-cost an LLM call |
+| `exoplanets:all` | 12h | Dataset updated infrequently |
 
-### Why Spring WebClient over RestTemplate?
-**Non-blocking NASA API calls** allow the ingestion pipeline to fetch 8 endpoints **concurrently** instead of sequentially, halving total pipeline runtime. WebClient returns Mono/Flux (reactive types), enabling parallel composition.
-
-### Why cache-aside over write-through?
-Data is only cached on first read, not on every write. Simpler to implement and avoids caching data that is never requested. For example, asteroid data from 2 years ago may never be queried — no point pre-warming the cache.
-
-### Why PostgreSQL over MongoDB?
-Relational model is correct here:
-- Clear entity relationships (asteroids → close_approach_date, events → start_time)
-- Date-range queries with indexes
-- ACID guarantees for idempotent writes (INSERT OR UPDATE on natural keys)
-- Strong typing prevents malformed NASA JSON from corrupting the DB
-
-### Why Redis TTL matches ingestion cadence?
-APOD: ingested daily → 24h cache. DONKI: ingested every 6h → 6h cache. ISS: moves continuously → 5s cache. **The cache TTL should reflect the data's rate of change**, not an arbitrary timeout.
-
-### Why Flyway over manual schema changes?
-Schema versioning in code:
-- Complete history of schema evolution
-- Reproducible deployments from scratch
-- Prevents "it works on my machine" schema drift
-- **Interviewers recognize this as a production-grade practice**
-
----
-
-## Development Workflow
-
-### Branch Strategy
-```
-main (always deployable, deploys to AWS ECS on merge)
-  ↑
-develop (integration branch)
-  ↑
-feature/{name} (e.g., feature/three-js-orbit, feature/ai-explainer)
-```
-
-### Commit Convention
-- `feat:` — New feature or endpoint
-- `fix:` — Bug fix
-- `chore:` — Project setup, tooling, config
-- `docs:` — Documentation only
-- `refactor:` — Code improvement, no behavior change
-- `test:` — Adding or updating tests
-- `ci:` — GitHub Actions pipeline changes
-
-### Local Development Setup
-```bash
-# Prerequisites: Java 21 (SDKMAN), Node 20 (nvm), Docker Desktop
-
-# Start PostgreSQL + Redis
-docker compose up -d
-
-# Backend (Spring Boot)
-cd backend/visualiser-api
-NASA_API_KEY=DEMO_KEY mvn spring-boot:run
-
-# Frontend (React + Vite)
-cd ../../frontend
-npm install && npm run dev
-
-# Open http://localhost:5173
-```
-
-### CI/CD Pipeline (GitHub Actions)
-```
-Pull Request to main/develop:
-  → Run JUnit tests
-  → Run npm test
-  → mvn package (verify build succeeds)
-  → Block merge on failure
-
-Merge to main:
-  → Build Docker image
-  → Push to AWS ECR (tagged with :latest and :{git-sha})
-  → Trigger ECS rolling deployment
-  → CloudWatch monitors health
-```
+**Cache-aside pattern:** Check Redis → HIT: return immediately → MISS: query PostgreSQL → store in Redis → return.
 
 ---
 
 ## Testing Strategy
 
-### Unit Tests (JUnit 5 + Mockito)
-**Target:** 60%+ line coverage on service layer
+### Backend
+- **Unit tests (JUnit 5 + Mockito):** Service layer — `ApodServiceTest`, `AsteroidServiceTest`, `IssServiceTest`, `MarsServiceTest`, `SpaceWeatherServiceTest`, `AiExplanationServiceTest`
+- **Ingestion tests:** `NeoWsIngestionJobTest` — mocks WebClient with real NASA JSON fixture, verifies idempotency
+- **Controller tests:** `AsteroidControllerTest`, `MarsControllerTest` — full HTTP layer via `@WebMvcTest`
+- **Integration tests:** Testcontainers for real PostgreSQL (no H2)
+- Test fixtures (real NASA JSON) in `src/test/resources/fixtures/`
 
-**Most important test:** `NeoWsIngestionServiceTest`
-- Mocks WebClient with real NASA JSON fixture
-- Verifies correct number of asteroids persisted
-- Verifies duplicate prevention on re-run (idempotency)
-- **This is the test to demo in interviews**
+### Frontend
+- **Vitest + React Testing Library:** `AsteroidTracker.test.tsx`
+- Run a single file: `npm run test -- src/components/dashboard/AsteroidTracker.test.tsx`
 
-### Integration Tests (Testcontainers)
-**Target:** Critical ingestion paths
-
-Uses real PostgreSQL container via Testcontainers. Verifies full controller → service → repository → database flow.
-
-
-### Load Tests (k6)
-**Target:** Performance benchmark for README
-
-Simulates 200 concurrent users hitting `/api/asteroids/week` for 60 seconds. Documents:
-- p95 latency before and after Redis caching
-- Throughput (requests/sec)
-- Error rate
+### Load Testing
+- `load-test.js` at repo root uses k6
+- Target: p95 < 100ms for cached endpoints under 200 concurrent users
 
 ---
 
-## Performance Targets (KPIs)
+## Performance Targets
 
-| KPI | Target | How to Measure |
-|-----|--------|----------------|
-| NASA API cache hit rate | ≥90% | CloudWatch custom metric |
-| p95 API response latency | <100ms (cached) | k6 load test + CloudWatch |
-| Ingestion pipeline success rate | ≥99% | CloudWatch alarm on failure |
-| AI explanation cache hit rate | ≥80% | Redis MONITOR during testing |
-| Frontend Lighthouse score | ≥90 | Chrome DevTools Lighthouse |
+| KPI | Target |
+|-----|--------|
+| Cache hit rate (NASA data) | ≥90% |
+| p95 API latency (cached) | <100ms |
+| Ingestion pipeline success rate | ≥99% |
+| AI explanation cache hit rate | ≥80% |
+| Frontend Lighthouse score | ≥90 |
 
 ---
 
-## Security & Compliance
+## Security
 
-### API Security
-- NASA API keys in AWS Secrets Manager (never in code)
-- Claude API key in AWS Secrets Manager
 - Rate limiting: 100 req/min per IP via Bucket4j
-- HTTPS enforced via AWS ALB (HTTP redirects to HTTPS)
-- Input validation: Spring @RequestParam + Bean Validation
-
-### Data Security
-- No user authentication required for v1 (alerts use email only)
-- Alert emails stored as plain text (no PII beyond email)
-- Unsubscribe via secure UUID token (no account required)
-- PostgreSQL not publicly accessible (VPC security group)
-- SQL injection prevented by JPA parameterized queries
-
-### Secrets Management
-- AWS Secrets Manager for all API keys
-- Environment variables injected at ECS task startup
+- No raw SQL — JPA parameterized queries only
+- API keys via environment variables (AWS Secrets Manager in production)
 - `.env` files in `.gitignore` — never committed
-- GitHub Actions secrets for AWS credentials
+- PostgreSQL not publicly accessible (VPC security group)

@@ -151,7 +151,6 @@ public class AiExplanationService {
         return null;
     }
 
-    @SuppressWarnings("unchecked")
     private String extractText(Map<?, ?> response) {
         if (response == null) {
             return null;
