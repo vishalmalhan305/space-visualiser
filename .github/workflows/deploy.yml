@@ -14,8 +14,12 @@ env:
   ECS_TASK_FAMILY: space-visualiser
 
 jobs:
+  tests:
+    uses: ./.github/workflows/tests.yml
+
   deploy:
     name: Build, Push, Deploy
+    needs: tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

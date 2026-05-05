@@ -61,6 +61,7 @@ jobs:
           SPRING_DATASOURCE_PASSWORD: space123
           SPRING_DATA_REDIS_HOST: localhost
           SPRING_DATA_REDIS_PORT: 6379
+          NASA_API_KEY: DEMO_KEY
         run: mvn clean test
 
   # ==========================================

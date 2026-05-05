@@ -5,6 +5,7 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  workflow_call:
 
 jobs:
   # ==========================================
@@ -126,7 +127,6 @@ jobs:
       - name: Run frontend tests
         working-directory: frontend
         run: npm test -- --run
-        continue-on-error: true
       
       - name: Build frontend
         working-directory: frontend
