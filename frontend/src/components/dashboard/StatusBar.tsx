@@ -60,13 +60,9 @@ function Badge({
       transition={{ duration: 0.18, ease: [0.215, 0.61, 0.355, 1] }}
       className="shrink-0 flex items-center gap-2 bg-space-navy/70 border border-white/10 px-3 py-1.5 rounded-full text-xs font-mono cursor-pointer hover:border-electric-blue/45 transition-all group whitespace-nowrap"
     >
-      <motion.span
-        animate={{ opacity: [0.8, 1, 0.8] }}
-        transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
-        className="text-gray-400 group-hover:text-electric-blue transition-colors"
-      >
+      <span className="text-gray-400 group-hover:text-electric-blue transition-colors" aria-hidden="true">
         {icon}
-      </motion.span>
+      </span>
       <span className="text-gray-400 hidden sm:inline">{label}:</span>
       {loading ? (
         <span className="w-10 h-3 bg-white/10 rounded animate-pulse-subtle inline-block" />

@@ -19,12 +19,14 @@
 - When in doubt, ask: "Would I be proud to walk through this code with a senior engineer?"
 
 ### R3: Technology Constraints
-**Backend:** Spring Boot 4.1 / Java 21 only — no Kotlin, no Scala, no alternative JVM frameworks  
-**Frontend:** React 19 + TypeScript + Vite 8 only — no Next.js, no Vue, no Angular  
-**Database:** PostgreSQL 16 only — no MongoDB, no MySQL  
-**Cache:** Redis 7 only — no Memcached, no embedded caching  
-**Cloud:** AWS only (ECS, RDS, ElastiCache, SES) — no GCP, no Azure  
+**Backend:** Spring Boot 4.1 / Java 21 only — no Kotlin, no Scala, no alternative JVM frameworks
+**Frontend:** React 19 + TypeScript + Vite 8 only — no Next.js, no Vue, no Angular
+**Database:** PostgreSQL 16 only — no MongoDB, no MySQL
+**Cache:** Redis 7 only — no Memcached, no embedded caching
+**Cloud:** AWS only (ECS, RDS, ElastiCache) — no GCP, no Azure
 **AI:** Google Gemini 2.5 Flash — configured via `GEMINI_API_KEY` / `app.gemini.api-key`
+**Notifications:** Sonner (toast) — already wired in App.tsx, do not add a second notification library
+**Animations:** Framer Motion — already installed, do not add GSAP or similar
 
 **Exception:** Infrastructure-as-Code tools (Terraform) and monitoring (Prometheus/Grafana) are flexible.
 
@@ -50,7 +52,7 @@ Before committing any code, verify:
 - [ ] No hardcoded API keys or secrets (use environment variables)
 - [ ] No `System.out.println` or `console.log` in production code (use SLF4J / proper logging)
 - [ ] All new endpoints documented in Swagger (`@Operation`, `@ApiResponse`)
-- [ ] All new database tables have Flyway migration file
+- [ ] All new database tables have a Flyway migration file
 - [ ] No TODO comments without GitHub issue reference
 - [ ] `.gitignore` updated if new config files added
 
@@ -67,14 +69,14 @@ Before committing any code, verify:
 ### R8: Test Data Standards
 - Use **real NASA JSON fixtures** in `src/test/resources/fixtures/` — no hand-written JSON
 - Integration tests use **Testcontainers** for PostgreSQL — no H2, no in-memory DB
-- Mock only external dependencies (WebClient, Claude API) — never mock your own services
+- Mock only external dependencies (WebClient, Gemini API) — never mock your own services
 - Test names follow convention: `methodName_scenario_expectedBehavior`
 
 ### R9: Performance Testing
-- k6 load test script exists in `/load-test.js`
+- k6 load test script exists at `/load-test.js`
 - Before Phase 4 completion, run: `k6 run load-test.js` and document results
 - Target: p95 latency <100ms for cached endpoints under 200 concurrent users
-- Results documented in README.md under "Performance Benchmarks" section
+- Results documented in README.md under "Performance Benchmarks"
 
 ---
 
@@ -116,7 +118,7 @@ docs/{name}                 # Documentation only (e.g., docs/api-readme)
 feat: add Three.js asteroid orbit visualizer
 
 Implements 3D orbit rendering using NASA NeoWs orbital elements.
-Converts Keplerian elements (semi-major axis, eccentricity, 
+Converts Keplerian elements (semi-major axis, eccentricity,
 inclination) to Cartesian coordinates for Three.js scene.
 
 Closes #12
@@ -161,8 +163,8 @@ ISS moves continuously — 60s is too stale.
 All JSON responses follow this structure:
 ```json
 {
-  "data": { ... },           // Success response body
-  "error": null              // Null on success
+  "data": { ... },
+  "error": null
 }
 ```
 
@@ -187,12 +189,6 @@ Cache-Control: public, max-age={ttl_seconds}
 ETag: {hash_of_response_body}
 ```
 
-Example for APOD (24h TTL):
-```
-Cache-Control: public, max-age=86400
-ETag: "abc123def456"
-```
-
 ---
 
 ## Database Rules
@@ -200,7 +196,7 @@ ETag: "abc123def456"
 ### R16: Flyway Migration Standards
 - **Never edit an existing migration file** — always create new `Vn+1__description.sql`
 - Migration files named: `V{version}__{description}.sql` (double underscore)
-  - Example: `V1__create_apod.sql`, `V2__create_asteroids.sql`
+  - Example: `V13__add_exoplanet_discovery_year.sql`
 - All tables have:
   - Primary key (natural key preferred over auto-increment where applicable)
   - `created_at` or `fetched_at` timestamp
@@ -220,7 +216,6 @@ All ingestion jobs use **natural keys** for upsert:
 // APOD: PK = date (natural key)
 ApodEntry entry = new ApodEntry();
 entry.setDate(LocalDate.parse(dto.getDate()));
-// ... set other fields
 apodRepository.save(entry);  // JPA merges if date exists
 ```
 
@@ -236,15 +231,17 @@ This ensures re-running ingestion doesn't create duplicates.
   - `apod:2025-04-15`
   - `asteroids:week:2025-W16`
   - `mars:photos:curiosity:FHAZ:sol:1000`
-  - `ai:explain:flare:2025-04-10T12:00`
+  - `ai:explain:exoplanet:Kepler-442 b`
+  - `ai:explain:asteroid:2021-XY3`
 - Use lowercase, colons as separators
-- No spaces or special characters in keys
+- No spaces or special characters in keys (URL-encode if needed)
 
 ### R20: TTL Strategy
 **TTL must match data rate of change:**
 - Static data (Mars photos, old APOD): 7 days
 - Daily updated data (APOD, asteroids): 6–24 hours
 - Hourly updated data (DONKI): 6 hours
+- Infrequently updated data (exoplanets): 12 hours
 - Live data (ISS position): 5 seconds
 - AI explanations: 24 hours (cost optimization)
 
@@ -252,24 +249,18 @@ This ensures re-running ingestion doesn't create duplicates.
 
 ### R21: Cache-Aside Implementation
 ```java
-// 1. Check Redis first
 String cacheKey = "apod:" + date;
 ApodEntry cached = redisTemplate.opsForValue().get(cacheKey);
 if (cached != null) return cached;
 
-// 2. Query database
 ApodEntry entry = apodRepository.findById(date).orElseThrow();
-
-// 3. Store in Redis
 redisTemplate.opsForValue().set(cacheKey, entry, Duration.ofHours(24));
-
-// 4. Return
 return entry;
 ```
 
-**Log cache hits/misses** for monitoring:
+Log cache hits/misses at DEBUG level:
 ```java
-log.debug("Cache HIT: {}", cacheKey);   // or
+log.debug("Cache HIT: {}", cacheKey);
 log.debug("Cache MISS: {}", cacheKey);
 ```
 
@@ -289,11 +280,24 @@ log.debug("Cache MISS: {}", cacheKey);
 public void ingest() {
     log.info("APOD ingestion starting...");
     try {
-        // ... fetch and process
+        // fetch and process
         log.info("APOD ingestion complete: {} entries", count);
     } catch (Exception e) {
         log.error("APOD ingestion failed: {}", e.getMessage(), e);
-        // CloudWatch alarm will trigger on ERROR log level
+        // CloudWatch alarm triggers on ERROR log level
     }
 }
 ```
+
+---
+
+## AI Explanation Rules
+
+### R24: AiExplanationService Coverage
+The `AiExplanationService` must handle these `type` values:
+- `asteroid` — fetch `Asteroid` by `neoId`; prompt includes name, diameter, approach date, distance, velocity, hazard status
+- `apod` — fetch `ApodEntry` by date; prompt includes title, date, and NASA explanation text
+- `exoplanet` — fetch `Exoplanet` by `plName`; prompt includes radius, mass, orbital period, host star, discovery method
+- Any other `type` — use the generic fallback prompt (do not throw an error)
+
+All responses are cached for 24h at `ai:explain:{type}:{id}` and persisted to the `ai_explanations` table.

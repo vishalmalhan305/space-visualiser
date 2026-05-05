@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useApodToday } from '../../hooks/useApod';
 import { ApodSkeleton } from './ApodSkeleton';
 import { Info, Calendar, Sparkles, X, ExternalLink } from 'lucide-react';
@@ -9,6 +9,7 @@ export const ApodHero: React.FC = () => {
   const { data, isLoading, isError } = useApodToday();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { data: aiInsight, isLoading: isExplaining } = useAiExplain('apod', data?.date ?? '', !!data);
+  const prefersReducedMotion = useReducedMotion();
 
   // Close drawer on Escape
   useEffect(() => {
@@ -53,7 +54,11 @@ export const ApodHero: React.FC = () => {
             <video
               src={data.url}
               className="absolute inset-0 w-full h-full object-cover opacity-80"
-              controls autoPlay muted loop playsInline
+              controls
+              autoPlay={!prefersReducedMotion}
+              muted
+              loop={!prefersReducedMotion}
+              playsInline
             />
           ) : (
             <iframe
@@ -68,6 +73,7 @@ export const ApodHero: React.FC = () => {
           <img
             src={data.hdurl || data.url}
             alt={data.title}
+            fetchPriority="high"
             className="absolute inset-0 w-full h-full object-cover opacity-80 transition-transform duration-1000 group-hover:scale-105"
           />
         )}
@@ -176,6 +182,7 @@ export const ApodHero: React.FC = () => {
                     <img
                       src={data.url}
                       alt={data.title}
+                      loading="lazy"
                       className="w-full h-48 object-cover opacity-80"
                     />
                   </div>

@@ -1,4 +1,4 @@
-# 🌌 Space Data Visualiser
+# Space Data Visualiser
 
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
@@ -9,12 +9,13 @@
 
 A portfolio-grade NASA data platform that transforms raw astronomical data from 8+ NASA APIs into interactive 3D visualizations, data-rich charts, and AI-generated insights. Built to demonstrate production-ready full-stack engineering, cloud architecture, and high-performance data pipelines.
 
-## 🚀 Key Features
+## Key Features
 
 - **Real-time Orbital Mechanics:** 3D asteroid orbit visualizer using Three.js and Keplerian elements.
-- **AI-Powered Insights:** Plain-language explanations of APOD images, solar flares, and asteroid close approaches via Google Gemini 2.5 Flash.
-- **Exoplanet Explorer:** Interactive D3.js scatter plot of 5,500+ confirmed exoplanets from the NASA Exoplanet Archive, with detail panels and filtering.
-- **Mars Exploration Hub:** High-resolution photo gallery from Curiosity, Opportunity, and Spirit rovers with multi-point filtering.
+- **NEO Ledger:** Paginated, filterable, and sortable asteroid table at `/asteroids` with date-range filtering, hazard flag toggle, and inline 3D orbit preview.
+- **AI-Powered Insights:** Plain-language explanations of APOD images, asteroid close approaches, solar events, and exoplanets via Google Gemini 2.5 Flash.
+- **Exoplanet Explorer:** Interactive D3.js scatter plot of 5,500+ confirmed exoplanets with a stats bar, category highlights, click-to-select detail panel, and AI planet briefing.
+- **Mars Exploration Hub:** High-resolution masonry photo gallery from Curiosity, Opportunity, and Spirit rovers with multi-point filtering, mission banner, and photo detail panel.
 - **ISS Telemetry Mapping:** Live tracking of the International Space Station with global coordinate mapping.
 - **Space Weather Dashboard:** Interactive charts for solar activity and geomagnetic storm tracking.
 - **High-Performance Caching:** Multi-layered Redis cache-aside implementation ensuring <100ms p95 latency.
@@ -22,13 +23,15 @@ A portfolio-grade NASA data platform that transforms raw astronomical data from 
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 - **Framework:** React 19 + TypeScript + Vite 8 (proxies `/api/*` to `:8080` in dev)
 - **Styling:** Tailwind CSS 4
-- **State & Data Fetching:** TanStack React Query (auto-refetching for live telemetry)
-- **Visualisation:** Three.js (3D Orbits), D3.js (Exoplanet scatter plots), Recharts (Time-series charts)
+- **State & Data Fetching:** TanStack React Query v5 (auto-refetching for live telemetry)
+- **Animations:** Framer Motion
+- **Notifications:** Sonner (toast)
+- **Visualisation:** Three.js (3D orbits), D3.js (Exoplanet scatter plots), Recharts (Time-series charts)
 - **Mapping:** Leaflet.js
 - **Testing:** Vitest + React Testing Library
 
@@ -36,20 +39,20 @@ A portfolio-grade NASA data platform that transforms raw astronomical data from 
 - **Framework:** Spring Boot 4.1 (Java 21)
 - **Data Access:** Spring Data JPA + Hibernate
 - **Networking:** Spring WebClient (Non-blocking concurrent API calls)
-- **Rate Limiting:** Bucket4j (Token-bucket per IP)
-- **Migrations:** Flyway
+- **Rate Limiting:** Bucket4j (Token-bucket per IP, 100 req/min)
+- **Migrations:** Flyway (V1–V12)
 - **Testing:** JUnit 5, Mockito, Testcontainers
 
 ### Infrastructure & Data
 - **Primary Database:** PostgreSQL 16
 - **Caching:** Redis 7
 - **Deployment:** AWS ECS Fargate, RDS, ElastiCache
-- **CI/CD:** GitHub Actions (Automated test -> Docker build -> ECS deploy)
+- **CI/CD:** GitHub Actions (Automated test → Docker build → ECS deploy)
 - **Containerization:** Docker multi-stage builds
 
 ---
 
-## 🚦 Prerequisites
+## Prerequisites
 
 Before you begin, ensure you have the following installed:
 - **Java 21** (Required for backend)
@@ -60,7 +63,7 @@ Before you begin, ensure you have the following installed:
 
 ---
 
-## 📦 Getting Started
+## Getting Started
 
 ### 1. Clone the Repository
 ```bash
@@ -69,27 +72,25 @@ cd space-visualiser
 ```
 
 ### 2. Environment Configuration
-Copy the template and fill in your NASA API key:
 ```bash
 cp env.example .env
+# Fill in NASA_API_KEY (required) and GEMINI_API_KEY (optional)
 ```
-Ensure your `NASA_API_KEY` is set in the `.env` file.
 
 ### 3. Spin up Infrastructure
-Use Docker to start PostgreSQL and Redis:
 ```bash
 docker compose up -d
 ```
-*Note: PostgreSQL is mapped to host port **5433** to avoid conflicts with local instances.*
+PostgreSQL is mapped to host port **5433** to avoid conflicts with local instances.
 
-### 4. Setup Backend
+### 4. Start the Backend
 ```bash
 cd backend/visualiser-api
 ./mvnw spring-boot:run
 ```
-The API will be available at `http://localhost:8080`.
+API available at `http://localhost:8080`.
 
-### 5. Setup Frontend
+### 5. Start the Frontend
 ```bash
 cd frontend
 npm install
@@ -99,84 +100,92 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
-## 🏗️ Architecture
+## Architecture
+
+### Routes
+| Path | Page | Description |
+|------|------|-------------|
+| `/` | Dashboard | APOD hero, asteroid tracker, ISS map, solar weather, APOD archive |
+| `/asteroids` | NEO Ledger | Paginated asteroid table with sort, filter, date range, hazard toggle, and orbit modal |
+| `/mars` | Mars Gallery | Masonry photo gallery from Curiosity, Opportunity, Spirit with camera/sol filters |
+| `/solar` | Solar Mission | Solar event timeline with Recharts activity charts |
+| `/exoplanets` | Exoplanet Explorer | D3.js scatter plot with stats bar, category highlights, AI briefing panel |
 
 ### Directory Structure
 ```text
 .
 ├── backend/
 │   └── visualiser-api/
-│       ├── src/main/java/.../controller/  # REST Endpoints
-│       ├── src/main/java/.../entity/      # JPA Models
-│       ├── src/main/java/.../repository/  # Database access
-│       ├── src/main/java/.../service/     # Business logic
-│       ├── src/main/java/.../ingestion/   # Scheduled NASA pulls
-│       └── src/main/resources/db/migration/ # Flyway SQL files
+│       ├── src/main/java/.../controller/     # REST Endpoints
+│       ├── src/main/java/.../entity/         # JPA Models
+│       ├── src/main/java/.../repository/     # Database access (Spring Data)
+│       ├── src/main/java/.../service/        # Business logic + cache-aside
+│       ├── src/main/java/.../visualiser/
+│       │   └── ingestion/                    # Scheduled NASA ingestion jobs
+│       └── src/main/resources/db/migration/  # Flyway SQL migrations (V1–V12)
 ├── frontend/
-│   ├── src/api/                           # API client definitions
-│   ├── src/components/                    # Reusable React components
-│   ├── src/hooks/                         # Custom data hooks (React Query)
-│   ├── src/pages/                         # Main page views
-│   └── src/types/                         # TypeScript interfaces
-└── docker-compose.yml                      # Infrastructure orchestration
+│   ├── src/api/                              # Axios client + endpoint constants
+│   ├── src/components/                       # UI components (apod/, dashboard/, mars/, layout/, ExoplanetXxx)
+│   ├── src/hooks/                            # React Query hooks per data type
+│   ├── src/pages/                            # Page views (AsteroidDetailPage, MarsPhotosPage, etc.)
+│   ├── src/types/                            # TypeScript interfaces for all API responses
+│   └── src/visualisers/                      # D3.js / Three.js canvas components
+└── docker-compose.yml
 ```
 
-### Data Flow Pattern
-1. **Background Ingestion:** Spring Scheduler triggers `IngestionJob`s -> `WebClient` fetches NASA JSON -> Data is normalized and persisted to PostgreSQL.
-2. **User Request:** React SPA calls REST endpoint -> Backend checks Redis cache (Cache-Aside) -> On MISS, queries PostgreSQL and hydrates Redis -> Returns JSON.
+### Data Flow
+1. **Background Ingestion:** Spring Scheduler triggers `IngestionJob`s → `WebClient` fetches NASA JSON → Data is normalized and persisted to PostgreSQL.
+2. **User Request:** React SPA calls REST endpoint → Backend checks Redis cache (Cache-Aside) → On MISS, queries PostgreSQL and hydrates Redis → Returns JSON.
 
 ---
 
-## 🔑 Environment Variables
+## Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `NASA_API_KEY` | Your NASA Open API Key | `DEMO_KEY` |
-| `GEMINI_API_KEY` | Google Gemini API key for AI explanations | - |
+| `GEMINI_API_KEY` | Google Gemini API key for AI explanations | — |
 | `POSTGRES_PORT` | Host port for PostgreSQL | `5433` |
 | `REDIS_PORT` | Host port for Redis | `6379` |
 | `BACKEND_PORT` | Spring Boot application port | `8080` |
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ### Backend (JUnit 5 + Testcontainers)
 ```bash
 cd backend/visualiser-api
-./mvnw test
+./mvnw test          # unit + integration tests
+./mvnw verify        # tests + Checkstyle (Google Java Style, 100-char line limit)
 ```
-*Tested paths:* Ingestion idempotency, cache-aside logic, and REST controllers.
 
-### Frontend (Vitest)
+### Frontend (Vitest + React Testing Library)
 ```bash
 cd frontend
 npm run test
 ```
-*Tested components:* UI rendering, formatting utilities, and API hook states.
 
 ---
 
-## 🚀 Deployment
+## Deployment
 
-The project is designed for **AWS ECS Fargate**.
-1. **CI:** GitHub Actions triggers on push to `main`.
-2. **Build:** Docker images are built and pushed to AWS ECR.
-3. **Deploy:** ECS task definition is updated, triggering a rolling deployment.
-4. **Data:** RDS (PostgreSQL) and ElastiCache (Redis) instances are assumed in the VPC.
-
----
-
-## 📂 Design Standards & Rules
-
-To maintain high code quality, this project adheres to specific standards:
-- **[Codebase Details](./CODEBASE_SUMMARY.md):** Full technical deep-dive.
-- **[Development Rules](./DEVELOPMENT_RULES.md):** Git conventions and coding patterns.
-- **[Design Decisions](./DESIGN_DECISIONS.md):** Rationale behind architectural choices.
+The project targets **AWS ECS Fargate**:
+1. **CI:** GitHub Actions triggers on push to `main`
+2. **Build:** Docker images built and pushed to AWS ECR
+3. **Deploy:** ECS task definition updated, rolling deployment initiated
+4. **Data:** RDS (PostgreSQL) and ElastiCache (Redis) in the same VPC
 
 ---
 
-## 📝 License
-This project is open-source and available under the MIT License.
+## Standards & Design Docs
 
-*Built by [Vishal Malhan](https://github.com/vishalmalhan305).*
+- **[Codebase Details](./CODEBASE_SUMMARY.md):** Technical deep-dive into all components
+- **[Development Rules](./DEVELOPMENT_RULES.md):** Git conventions and coding patterns
+- **[Design Decisions](./DESIGN_DECISIONS.md):** Rationale behind architectural choices
+- **[CI Setup Guide](./CI_SETUP_GUIDE.md):** GitHub Actions workflow documentation
+
+---
+
+## License
+MIT License. Built by [Vishal Malhan](https://github.com/vishalmalhan305).

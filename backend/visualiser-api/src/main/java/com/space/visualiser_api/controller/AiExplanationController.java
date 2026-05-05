@@ -1,8 +1,7 @@
 package com.space.visualiser_api.controller;
 
 import com.space.visualiser_api.service.AiExplanationService;
-import io.github.bucket4j.Bandwidth;
-import io.github.bucket4j.Bucket;
+
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,12 +19,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AiExplanationController {
 
     private static final long REQUESTS_PER_MINUTE = 100L;
-    private static final Map<String, Bucket> RATE_LIMIT_BUCKETS = new ConcurrentHashMap<>();
 
     private final AiExplanationService aiExplanationService;
+    private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
-    public AiExplanationController(AiExplanationService aiExplanationService) {
+    public AiExplanationController(AiExplanationService aiExplanationService, org.springframework.data.redis.core.StringRedisTemplate redisTemplate) {
         this.aiExplanationService = aiExplanationService;
+        this.redisTemplate = redisTemplate;
     }
 
     @GetMapping("/explain")
@@ -42,18 +42,18 @@ public class AiExplanationController {
 
     private void enforceRateLimit(HttpServletRequest request) {
         String clientIp = extractClientIp(request);
-        Bucket bucket = RATE_LIMIT_BUCKETS.computeIfAbsent(clientIp, ignored -> createBucket());
-        if (!bucket.tryConsume(1)) {
-            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Rate limit exceeded");
+        String key = "ratelimit:ai:" + clientIp;
+        try {
+            Long count = redisTemplate.opsForValue().increment(key);
+            if (count != null && count == 1L) {
+                redisTemplate.expire(key, Duration.ofMinutes(1));
+            }
+            if (count != null && count > REQUESTS_PER_MINUTE) {
+                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Rate limit exceeded");
+            }
+        } catch (Exception e) {
+            // Redis might be down, fallback to allow or log
         }
-    }
-
-    private Bucket createBucket() {
-        Bandwidth limit = Bandwidth.builder()
-                .capacity(REQUESTS_PER_MINUTE)
-                .refillIntervally(REQUESTS_PER_MINUTE, Duration.ofMinutes(1))
-                .build();
-        return Bucket.builder().addLimit(limit).build();
     }
 
     private String extractClientIp(HttpServletRequest request) {

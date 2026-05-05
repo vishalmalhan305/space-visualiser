@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-@SuppressWarnings({"unchecked", "rawtypes"})
+@SuppressWarnings({})
 @ExtendWith(MockitoExtension.class)
 class AiExplanationServiceTest {
 

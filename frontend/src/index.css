@@ -17,6 +17,12 @@
     padding: 0;
     min-height: 100vh;
   }
+
+  :focus-visible {
+    outline: 2px solid var(--color-electric-blue);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
 }
 
 /* Glassmorphism utilities for our components */
@@ -125,4 +131,28 @@ input[type="date"] {
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse-subtle {
+    animation: none;
+    opacity: 0.8;
+  }
+
+  .radar-scan {
+    animation: none;
+    opacity: 0;
+  }
+
+  .text-glow:hover {
+    animation: none;
+  }
+
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
 }

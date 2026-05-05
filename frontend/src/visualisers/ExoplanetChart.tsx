@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import * as d3 from 'd3';
 import type { ExoplanetSummary } from '../types/exoplanet';
-import { CATEGORY_COLORS } from '../components/ExoplanetSidebar';
+import { CATEGORY_COLORS } from '../constants/exoplanet';
 
 const METHOD_COLORS: Record<string, string> = {
   Transit: '#b7c4ff',

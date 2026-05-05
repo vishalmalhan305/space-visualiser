@@ -9,6 +9,28 @@ import {
 import { useNavigate } from 'react-router-dom';
 import type { Asteroid } from '../types/dashboard';
 
+interface SortHeaderProps {
+  field: string;
+  label: string;
+  align?: 'left' | 'right';
+  sortBy: string;
+  onSort: (field: string) => void;
+}
+
+function SortHeader({ field, label, align = 'right', sortBy, onSort }: SortHeaderProps) {
+  return (
+    <th
+      className={`px-4 py-3 text-${align} font-semibold cursor-pointer hover:text-white transition-colors`}
+      onClick={() => onSort(field)}
+    >
+      <div className={`flex items-center ${align === 'right' ? 'justify-end' : ''} gap-1.5`}>
+        {label}
+        <ArrowUpDown className={`w-2.5 h-2.5 ${sortBy === field ? 'text-electric-blue' : ''}`} />
+      </div>
+    </th>
+  );
+}
+
 function RowSkeleton() {
   return (
     <div className="flex items-center gap-3 px-4 py-3 border-b border-white/5">
@@ -84,17 +106,6 @@ export function AsteroidDetailPage() {
     return 'warning';
   };
 
-  const SortHeader = ({ field, label, align = 'right' }: { field: string; label: string; align?: 'left' | 'right' }) => (
-    <th
-      className={`px-4 py-3 text-${align} font-semibold cursor-pointer hover:text-white transition-colors`}
-      onClick={() => handleSort(field)}
-    >
-      <div className={`flex items-center ${align === 'right' ? 'justify-end' : ''} gap-1.5`}>
-        {label}
-        <ArrowUpDown className={`w-2.5 h-2.5 ${sortBy === field ? 'text-electric-blue' : ''}`} />
-      </div>
-    </th>
-  );
 
   return (
     <motion.div
@@ -277,11 +288,11 @@ export function AsteroidDetailPage() {
             <table className="w-full text-xs font-mono">
               <thead className="sticky top-0 bg-space-dark/95 backdrop-blur-md z-10">
                 <tr className="text-gray-500 uppercase text-[9px] tracking-widest border-b border-white/5">
-                  <SortHeader field="name" label="Name" align="left" />
-                  <SortHeader field="size" label="Ø km" />
-                  <SortHeader field="closeApproachDate" label="Date" />
-                  <SortHeader field="missDistance" label="Miss Dist." />
-                  <SortHeader field="velocity" label="Velocity" />
+                  <SortHeader field="name" label="Name" align="left" sortBy={sortBy} onSort={handleSort} />
+                  <SortHeader field="size" label="Ø km" sortBy={sortBy} onSort={handleSort} />
+                  <SortHeader field="closeApproachDate" label="Date" sortBy={sortBy} onSort={handleSort} />
+                  <SortHeader field="missDistance" label="Miss Dist." sortBy={sortBy} onSort={handleSort} />
+                  <SortHeader field="velocity" label="Velocity" sortBy={sortBy} onSort={handleSort} />
                   <th className="px-4 py-3 text-center font-semibold">
                     <span title={`CRITICAL: within ${(RED_HAZARD_THRESHOLD_KM / 1_000_000).toFixed(1)}M km · HAZARD: potentially hazardous · NOMINAL: safe`}>
                       Threat ⓘ

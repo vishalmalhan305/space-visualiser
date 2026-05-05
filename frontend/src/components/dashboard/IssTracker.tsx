@@ -57,13 +57,7 @@ export function IssTracker() {
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
         <div className="flex items-center gap-3">
-          <motion.span
-            animate={{ scale: [1, 1.08, 1] }}
-            transition={{ repeat: Infinity, duration: 2.5, ease: [0.215, 0.61, 0.355, 1] }}
-            className="inline-flex"
-          >
-            <Satellite className="text-electric-blue w-5 h-5" />
-          </motion.span>
+          <Satellite className="text-electric-blue w-5 h-5 motion-safe:animate-pulse" />
           <h2 className="font-display text-sm tracking-widest uppercase text-white">
             ISS Live Position
           </h2>
@@ -114,10 +108,9 @@ export function IssTracker() {
 
       {/* Live dot indicator */}
       <div className="px-5 pb-4 flex items-center gap-2 text-[10px] font-mono text-gray-500">
-        <motion.span
-          className="inline-block w-2 h-2 rounded-full bg-green-400"
-          animate={{ scale: [1, 1.2, 1], opacity: [1, 0.7, 1] }}
-          transition={{ repeat: Infinity, duration: 2.2, ease: [0.215, 0.61, 0.355, 1] }}
+        <span
+          className="inline-block w-2 h-2 rounded-full bg-green-400 motion-safe:animate-pulse"
+          aria-hidden="true"
         />
         UPDATING EVERY 15 SECONDS
       </div>
