@@ -136,6 +136,10 @@ public class ApodIngestionJob {
                         .bodyToMono(ApodResponseDto.class)
                         .block();
             } catch (WebClientResponseException exception) {
+                if (exception.getStatusCode().value() == 404) {
+                    LOGGER.info("APOD for today not yet available, will retry later.");
+                    return;
+                }
                 throw new IllegalStateException(
                         "NASA APOD request failed with status " + exception.getStatusCode().value(),
                         exception

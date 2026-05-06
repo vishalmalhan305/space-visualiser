@@ -8,7 +8,7 @@
   "containerDefinitions": [
     {
       "name": "backend",
-      "image": "435472314090.dkr.ecr.us-east-1.amazonaws.com/space-visualiser-api:latest",
+      "image": "435472314090.dkr.ecr.ca-central-1.amazonaws.com/space-visualiser-api:latest",
       "portMappings": [
         {
           "containerPort": 8080,
@@ -19,7 +19,7 @@
       "environment": [
         {
           "name": "SPRING_DATASOURCE_URL",
-          "value": "jdbc:postgresql://space-visualiser-db.cy9e0ogucqvf.us-east-1.rds.amazonaws.com:5432/spacedb"
+          "value": "jdbc:postgresql://space-visualiser-db.cnm226eekqc3.ca-central-1.rds.amazonaws.com:5432/spacedb"
         },
         {
           "name": "SPRING_DATASOURCE_USERNAME",
@@ -27,7 +27,7 @@
         },
         {
           "name": "SPRING_DATA_REDIS_HOST",
-          "value": "space-visualiser-redis.hzvhyl.0001.use1.cache.amazonaws.com"
+          "value": "space-visualiser-redis.yit4ri.0001.cac1.cache.amazonaws.com"
         },
         {
           "name": "SPRING_DATA_REDIS_PORT",
@@ -45,11 +45,12 @@
       "secrets": [
         {
           "name": "SPRING_DATASOURCE_PASSWORD",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:435472314090:secret:space-visualiser/api-secrets:DB_PASSWORD::"
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:435472314090:secret:space-visualiser/api-secrets-xndsJR:DB_PASSWORD::"
+          
         },
         {
           "name": "NASA_API_KEY",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:435472314090:secret:space-visualiser/api-secrets:NASA_API_KEY::"
+          "valueFrom": "arn:aws:secretsmanager:ca-central-1:435472314090:secret:space-visualiser/api-secrets-xndsJR:NASA_API_KEY::"
         }
       ],
       "logConfiguration": {
@@ -72,7 +73,7 @@
     },
     {
       "name": "frontend",
-      "image": "435472314090.dkr.ecr.us-east-1.amazonaws.com/space-visualiser-frontend:latest",
+      "image": "435472314090.dkr.ecr.ca-central-1.amazonaws.com/space-visualiser-frontend:latest",
       "portMappings": [
         {
           "containerPort": 80,

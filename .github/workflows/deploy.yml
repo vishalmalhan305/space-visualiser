@@ -22,7 +22,8 @@ jobs:
     needs: tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -52,10 +53,12 @@ jobs:
           docker push $ECR_REGISTRY/$FRONTEND_IMAGE_NAME:${{ github.sha }}
           docker push $ECR_REGISTRY/$FRONTEND_IMAGE_NAME:latest
 
-      - name: Download current task definition
+      - name: Download and Clean Task Definition
         run: |
           aws ecs describe-task-definition --task-definition $ECS_TASK_FAMILY \
-            --query taskDefinition --region $AWS_REGION > task-definition.json
+            --query 'taskDefinition' --region $AWS_REGION > temp-td.json
+          # Strips metadata that causes 'InvalidParameterException' when registering new versions
+          jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' temp-td.json > task-definition.json
 
       - name: Update backend image in task definition
         id: update-backend
@@ -80,6 +83,4 @@ jobs:
           service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
-          region: ${{ env.AWS_REGION }}
           force-new-deployment: true
-          
