@@ -64,10 +64,12 @@ jobs:
         run: |
           jq --arg nasa "${{ secrets.NASA_API_KEY }}" \
              --arg gemini "${{ secrets.GEMINI_API_KEY }}" \
-             '(.containerDefinitions[] | select(.name == "backend") | .environment) += [
-                {"name": "NASA_API_KEY", "value": $nasa},
-                {"name": "GEMINI_API_KEY", "value": $gemini}
-              ]' task-definition.json > task-definition-patched.json
+             '(.containerDefinitions[] | select(.name == "backend") | .secrets) |=
+               map(select(.name != "NASA_API_KEY" and .name != "GEMINI_API_KEY"))
+             | (.containerDefinitions[] | select(.name == "backend") | .environment) += [
+                 {"name": "NASA_API_KEY", "value": $nasa},
+                 {"name": "GEMINI_API_KEY", "value": $gemini}
+               ]' task-definition.json > task-definition-patched.json
           mv task-definition-patched.json task-definition.json
 
       - name: Update backend image in task definition
