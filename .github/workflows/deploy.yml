@@ -60,6 +60,16 @@ jobs:
           # Strips metadata that causes 'InvalidParameterException' when registering new versions
           jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' temp-td.json > task-definition.json
 
+      - name: Inject API secrets into task definition
+        run: |
+          jq --arg nasa "${{ secrets.NASA_API_KEY }}" \
+             --arg gemini "${{ secrets.GEMINI_API_KEY }}" \
+             '(.containerDefinitions[] | select(.name == "backend") | .environment) += [
+                {"name": "NASA_API_KEY", "value": $nasa},
+                {"name": "GEMINI_API_KEY", "value": $gemini}
+              ]' task-definition.json > task-definition-patched.json
+          mv task-definition-patched.json task-definition.json
+
       - name: Update backend image in task definition
         id: update-backend
         uses: aws-actions/amazon-ecs-render-task-definition@v1
