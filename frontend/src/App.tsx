@@ -68,9 +68,9 @@ function Dashboard() {
 
       {/* ── Real-Time Data Grid ───────────────────────────── */}
       <section id="intel" aria-label="Live space intelligence">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="flex flex-col gap-6">
+          {/* NEO — full width */}
           <motion.div
-            className="lg:col-span-2"
             id="asteroids"
             initial={{ opacity: 0, y: 32 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -80,20 +80,27 @@ function Dashboard() {
             <AsteroidTracker />
           </motion.div>
 
-          <motion.div
-            className="flex flex-col gap-6"
-            initial={{ opacity: 0, y: 32 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.6, delay: 0.12, ease: [0.215, 0.61, 0.355, 1] }}
-          >
-            <div id="solar">
+          {/* Solar + ISS — side by side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <motion.div
+              id="solar"
+              initial={{ opacity: 0, y: 32 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ duration: 0.6, delay: 0.1, ease: [0.215, 0.61, 0.355, 1] }}
+            >
               <SolarWeatherWidget />
-            </div>
-            <div id="iss">
+            </motion.div>
+            <motion.div
+              id="iss"
+              initial={{ opacity: 0, y: 32 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ duration: 0.6, delay: 0.2, ease: [0.215, 0.61, 0.355, 1] }}
+            >
               <IssTracker />
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       </section>
 

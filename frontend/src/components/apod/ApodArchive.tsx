@@ -5,6 +5,14 @@ import { ChevronLeft, ChevronRight, Play, X, ExternalLink, Sparkles } from 'luci
 import type { ApodEntry } from '../../types/apod';
 import { useAiExplain } from '../../hooks/useAiExplain';
 
+function toEmbedUrl(url: string): string {
+  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]+)/);
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?rel=0`;
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+  return url;
+}
+
 const CARDS_PER_PAGE = 3;
 
 const archiveVariants = {
@@ -59,18 +67,14 @@ function ApodLightbox({ entry, onClose }: { entry: ApodEntry; onClose: () => voi
         {/* Image side */}
         <div className="md:w-1/2 bg-space-dark flex-shrink-0">
           {entry.mediaType === 'video' ? (
-            <div className="w-full h-64 md:h-full bg-gradient-to-br from-space-navy to-space-dark flex flex-col items-center justify-center gap-4">
-              <a
-                href={entry.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex flex-col items-center gap-3 text-gray-400 hover:text-electric-blue transition-colors"
-              >
-                <div className="w-16 h-16 rounded-full bg-electric-blue/10 border border-electric-blue/30 flex items-center justify-center">
-                  <Play className="w-8 h-8" />
-                </div>
-                <span className="text-xs font-mono uppercase tracking-widest">Watch Video</span>
-              </a>
+            <div className="w-full h-64 md:h-full relative bg-space-dark">
+              <iframe
+                src={toEmbedUrl(entry.url)}
+                title={entry.title}
+                className="w-full h-full border-0"
+                allowFullScreen
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              />
             </div>
           ) : (
             <img

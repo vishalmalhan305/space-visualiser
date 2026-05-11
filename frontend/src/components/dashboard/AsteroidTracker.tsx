@@ -64,7 +64,7 @@ export function AsteroidTracker() {
         </div>
 
         {/* Summary Table */}
-        <div className="overflow-x-auto min-h-[220px] max-h-[320px] overflow-y-auto">
+        <div className="overflow-x-auto max-h-[320px] overflow-y-auto">
           {isLoading ? (
             <div className="p-2">
               {[...Array(4)].map((_, i) => <RowSkeleton key={i} />)}

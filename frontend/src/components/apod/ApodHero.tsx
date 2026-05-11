@@ -5,6 +5,14 @@ import { ApodSkeleton } from './ApodSkeleton';
 import { Info, Calendar, Sparkles, X, ExternalLink } from 'lucide-react';
 import { useAiExplain } from '../../hooks/useAiExplain';
 
+function toEmbedUrl(url: string): string {
+  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]+)/);
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?rel=0`;
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+  return url;
+}
+
 export const ApodHero: React.FC = () => {
   const { data, isLoading, isError } = useApodToday();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -62,11 +70,11 @@ export const ApodHero: React.FC = () => {
             />
           ) : (
             <iframe
-              src={data.url}
+              src={toEmbedUrl(data.url)}
               title={`APOD video: ${data.title}`}
-              className="absolute inset-0 w-full h-full object-cover opacity-80"
+              className="absolute inset-0 w-full h-full border-0"
               allowFullScreen
-              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             />
           )
         ) : (
@@ -176,14 +184,24 @@ export const ApodHero: React.FC = () => {
                   )}
                 </div>
 
-                {/* Thumbnail */}
-                {data.mediaType === 'image' && (
+                {/* Thumbnail / Video preview */}
+                {data.mediaType === 'image' ? (
                   <div className="rounded-xl overflow-hidden border border-white/10">
                     <img
                       src={data.url}
                       alt={data.title}
                       loading="lazy"
                       className="w-full h-48 object-cover opacity-80"
+                    />
+                  </div>
+                ) : (
+                  <div className="rounded-xl overflow-hidden border border-white/10 aspect-video">
+                    <iframe
+                      src={toEmbedUrl(data.url)}
+                      title={`APOD video: ${data.title}`}
+                      className="w-full h-full border-0"
+                      allowFullScreen
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     />
                   </div>
                 )}
