@@ -69,7 +69,10 @@ jobs:
              | (.containerDefinitions[] | select(.name == "backend") | .environment) += [
                  {"name": "NASA_API_KEY", "value": $nasa},
                  {"name": "GEMINI_API_KEY", "value": $gemini}
-               ]' task-definition.json > task-definition-patched.json
+               ]
+             | (.containerDefinitions[] | select(.name == "backend") | .healthCheck.command) =
+               ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health/liveness || exit 1"]' \
+             task-definition.json > task-definition-patched.json
           mv task-definition-patched.json task-definition.json
 
       - name: Update backend image in task definition
