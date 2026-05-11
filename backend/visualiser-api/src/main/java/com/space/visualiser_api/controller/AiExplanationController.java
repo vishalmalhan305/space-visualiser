@@ -3,6 +3,7 @@ package com.space.visualiser_api.controller;
 import com.space.visualiser_api.service.AiExplanationService;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Duration;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/ai")
 public class AiExplanationController {
@@ -50,8 +52,10 @@ public class AiExplanationController {
             if (count != null && count > REQUESTS_PER_MINUTE) {
                 throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Rate limit exceeded");
             }
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
-            // Redis might be down, fallback to allow or log
+            log.warn("Redis rate-limit check failed for IP {}, allowing request", clientIp, e);
         }
     }
 
