@@ -11,4 +11,6 @@ import java.util.List;
 public interface ApodRepository extends JpaRepository<ApodEntry, java.time.LocalDate> {
 
     List<ApodEntry> findByDateBetweenOrderByDateAsc(LocalDate start, LocalDate end);
+
+    java.util.Optional<ApodEntry> findTopByOrderByDateDesc();
 }

@@ -55,7 +55,24 @@ public class ApodService {
     }
 
     public ApodEntry getToday() {
-        return getByDate(LocalDate.now(ZoneOffset.UTC));
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        try {
+            return getByDate(today);
+        } catch (ResponseStatusException e) {
+            if (e.getStatusCode().value() == 404) {
+                LOGGER.info("Today's APOD ({}) not yet available, returning most recent entry", today);
+                return apodRepository.findTopByOrderByDateDesc()
+                        .map(entry -> {
+                            writeToCache(buildCacheKey(entry.getDate()), entry);
+                            return entry;
+                        })
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.SERVICE_UNAVAILABLE,
+                                "No APOD data available yet"
+                        ));
+            }
+            throw e;
+        }
     }
 
     public List<ApodEntry> getArchive(int count) {
