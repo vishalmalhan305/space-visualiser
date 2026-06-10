@@ -48,7 +48,7 @@ public class ApodIngestionJob {
         this.nasaApiKey = nasaApiKey;
     }
 
-    @Scheduled(cron = "0 5 0 * * *", zone = "UTC")
+    @Scheduled(cron = "0 0 18 * * *", zone = "UTC")
     public void fetchTodayApod() {
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
         try {
@@ -138,7 +138,7 @@ public class ApodIngestionJob {
             } catch (WebClientResponseException exception) {
                 if (exception.getStatusCode().value() == 404) {
                     LOGGER.info("APOD for today not yet available, will retry later.");
-                    return;
+                    throw new IllegalStateException("NASA APOD not yet published for " + date);
                 }
                 throw new IllegalStateException(
                         "NASA APOD request failed with status " + exception.getStatusCode().value(),
